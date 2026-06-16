@@ -2,7 +2,7 @@
 name: Daily Gazette
 on:
   schedule:
-    - cron: '5 13 * * *'
+    - cron: '20 1 * * *'
 jobs:
   run:
     runs-on: ubuntu-latest
