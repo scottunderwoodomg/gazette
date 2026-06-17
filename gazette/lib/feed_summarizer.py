@@ -156,6 +156,8 @@ class FeedSummarizer:
 
     def write_summary(self, summaries_by_group, output_path):
         """Write per-group summaries to a single output file."""
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("=" * 60 + "\n")
             f.write("RSS ARTICLE SUMMARY\n")
