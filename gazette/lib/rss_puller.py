@@ -84,6 +84,7 @@ class RssPuller():
 
     def write_output(self, all_articles_by_group, feeds_by_group, start, end):
         output_path = os.path.join(self.script_dir, "rss_output.txt")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         total_articles = sum(len(a) for a in all_articles_by_group.values())
         total_feeds    = sum(len(f) for f in feeds_by_group.values())
