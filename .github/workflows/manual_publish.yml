@@ -1,5 +1,5 @@
-# .github/workflows/gazette.yml
-name: Daily Gazette
+# .github/workflows/manual_publish.yml
+name: Manual Publish
 on:
   workflow_dispatch:
 jobs:
