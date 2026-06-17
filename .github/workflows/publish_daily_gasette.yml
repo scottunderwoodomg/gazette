@@ -1,0 +1,20 @@
+# .github/workflows/publish_daily_gasette.yml
+name: Publish Daily Gazette
+on:
+  schedule:
+    - cron: '0 10 * * *'
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r gazette/requirements.txt
+      - run: python gazette/run.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_TARGET: ${{ secrets.EMAIL_TARGET }}
