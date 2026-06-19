@@ -203,132 +203,155 @@ class FeedSummarizer:
         return None
 
     def build_email_html(self, summaries_by_group, recipient_name, date_str):
-        # Section background colors — cycles if more than 3 groups
-        section_colors = ["#E8F4FD", "#FEF3E2", "#E8F8F0", "#F3E8FD", "#FDE8E8"]
-
-        # Build section blocks
         sections_html = ""
         for i, (group_name, summary) in enumerate(summaries_by_group.items()):
-            color = section_colors[i % len(section_colors)]
-            section_title = group_name.replace("_", " ").title()
-            content_html = markdown.markdown(summary)
+            section_title = group_name.replace("_", " ").upper()
+            content_html  = markdown.markdown(summary)
+    
+            content_html = content_html.replace(
+                "<h1>", '<h1 style="font-family:\'Trebuchet MS\',Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#111111;margin:20px 0 4px 0;letter-spacing:-0.01em;">'
+            ).replace(
+                "<h2>", '<h2 style="font-family:\'Trebuchet MS\',Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#111111;margin:20px 0 4px 0;letter-spacing:-0.01em;">'
+            ).replace(
+                "<h3>", '<h3 style="font-family:\'Trebuchet MS\',Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#444444;margin:14px 0 2px 0;">'
+            ).replace(
+                "<p>", '<p style="font-family:\'Trebuchet MS\',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.75;color:#333333;margin:0 0 10px 0;">'
+            ).replace(
+                "<ul>", '<ul style="margin:4px 0 14px 0;padding-left:18px;">'
+            ).replace(
+                "<li>", '<li style="font-family:\'Trebuchet MS\',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#333333;margin-bottom:8px;">'
+            ).replace(
+                "<a ", '<a style="color:#111111;text-decoration:underline;font-weight:600;" '
+            )
+    
+            top_border = "" if i == 0 else "border-top:2px solid #111111;"
+    
             sections_html += f"""
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:0;border-collapse:collapse;">
             <tr>
-                <td style="
-                background-color: {color};
-                border-left: 4px solid #111111;
-                padding: 20px 24px;
-                font-family: 'Georgia', serif;
-                ">
+                <td style="background-color:#ffffff;padding:28px 36px 32px 36px;{top_border}">
                 <p style="
-                    margin: 0 0 12px 0;
-                    font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
-                    font-size: 13px;
-                    font-weight: 900;
-                    letter-spacing: 0.12em;
-                    text-transform: uppercase;
-                    color: #111111;
-                    border-bottom: 2px solid #111111;
-                    padding-bottom: 8px;
+                    margin:0 0 6px 0;
+                    font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;
+                    font-size:9px;
+                    font-weight:700;
+                    letter-spacing:0.25em;
+                    text-transform:uppercase;
+                    color:#999999;
                 ">{section_title}</p>
-                <div style="
-                    font-family: Georgia, 'Times New Roman', serif;
-                    font-size: 15px;
-                    line-height: 1.7;
-                    color: #1a1a1a;
-                ">{content_html}</div>
+                <div style="border-bottom:1px solid #e0e0e0;margin-bottom:20px;padding-bottom:0;"></div>
+                <div>{content_html}</div>
                 </td>
             </tr>
             </table>
             """
-
-        # Logo block
+    
         if self.LOGO_B64:
-            logo_html = """<img
+            logo_html = '''<img
                 src="cid:gazette_logo"
-                width="96"
-                height="96"
+                width="120"
+                height="120"
                 alt="Gazette"
-                style="display:block;width:96px;height:96px;object-fit:contain;"
-            />"""
+                style="display:block;width:120px;height:120px;object-fit:contain;filter:brightness(0)invert(1);"
+            />'''
         else:
-            logo_html = '<div style="width:64px;height:64px;background:#111;color:#fff;font-size:28px;font-weight:900;text-align:center;line-height:64px;font-family:Georgia,serif;">G</div>'
-
+            logo_html = '''<div style="
+                width:120px;height:120px;
+                background:#ffffff;
+                color:#111111;
+                font-size:56px;
+                font-weight:900;
+                text-align:center;
+                line-height:120px;
+                font-family:Georgia,serif;
+            ">G</div>'''
+    
         html = f"""<!DOCTYPE html>
     <html lang="en">
     <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
     <title>Daily Gazette</title>
     </head>
-    <body style="margin:0;padding:0;background-color:#f0f0f0;font-family:Georgia,serif;">
-
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f0;padding:32px 16px;">
+    <body style="margin:0;padding:0;background-color:#e4e4e4;">
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#e4e4e4;padding:36px 16px;">
         <tr>
         <td align="center">
-            <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;">
-
-            <!-- HEADER -->
+            <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;border-collapse:collapse;">
+    
+            <!-- MASTHEAD -->
             <tr>
-                <td style="padding-bottom: 24px; border-bottom: 3px double #111111; margin-bottom: 24px;">
+                <td style="background-color:#111111;padding:40px 36px;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                    <td width="80" valign="middle">{logo_html}</td>
-                    <td valign="middle" style="padding-left: 16px;">
+                    <td width="136" valign="middle" style="padding-right:28px;">
+                        {logo_html}
+                    </td>
+                    <td valign="middle">
                         <h1 style="
-                        margin: 0 0 4px 0;
-                        font-family: Georgia, 'Times New Roman', serif;
-                        font-size: 28px;
-                        font-weight: 700;
-                        color: #111111;
-                        letter-spacing: -0.01em;
+                        margin:0 0 10px 0;
+                        font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;
+                        font-size:34px;
+                        font-weight:700;
+                        color:#ffffff;
+                        letter-spacing:-0.02em;
+                        line-height:1.05;
                         ">{recipient_name}'s Daily Gazette</h1>
                         <p style="
-                        margin: 0;
-                        font-family: Arial, sans-serif;
-                        font-size: 12px;
-                        color: #555555;
-                        letter-spacing: 0.08em;
-                        text-transform: uppercase;
+                        margin:0;
+                        font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;
+                        font-size:10px;
+                        font-weight:400;
+                        color:#888888;
+                        letter-spacing:0.2em;
+                        text-transform:uppercase;
                         ">{date_str}</p>
                     </td>
                     </tr>
                 </table>
                 </td>
             </tr>
-
-            <!-- DIVIDER -->
-            <tr><td style="height: 24px;"></td></tr>
-
-            <!-- SECTIONS -->
+    
+            <!-- Rule under masthead -->
             <tr>
-                <td>{sections_html}</td>
+                <td style="background-color:#333333;height:2px;font-size:0;line-height:0;">&nbsp;</td>
             </tr>
-
+            <tr>
+                <td style="background-color:#555555;height:1px;font-size:0;line-height:0;">&nbsp;</td>
+            </tr>
+    
+            <!-- BODY -->
+            <tr>
+                <td style="background-color:#ffffff;">
+                {sections_html}
+                </td>
+            </tr>
+    
             <!-- FOOTER -->
             <tr>
                 <td style="
-                border-top: 2px solid #111111;
-                padding-top: 16px;
-                text-align: center;
-                font-family: Arial, sans-serif;
-                font-size: 11px;
-                color: #888888;
-                letter-spacing: 0.06em;
+                background-color:#111111;
+                padding:14px 36px;
+                text-align:center;
+                font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;
+                font-size:9px;
+                color:#555555;
+                letter-spacing:0.18em;
+                text-transform:uppercase;
                 ">
-                THE DAILY GAZETTE &nbsp;·&nbsp; AUTOMATED EDITION &nbsp;·&nbsp; {date_str}
+                The Daily Gazette &nbsp;·&nbsp; Automated Edition &nbsp;·&nbsp; {date_str}
                 </td>
             </tr>
-
+    
             </table>
         </td>
         </tr>
     </table>
-
+    
     </body>
     </html>"""
-
+    
         return html
 
     def main(self):

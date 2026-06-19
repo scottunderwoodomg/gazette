@@ -47,7 +47,7 @@ gazette_config = {
             "Rain",
             "Extreme Weather",
         ],
-        "sports": ["Cleveland Cavaliers", "Lebron James"],
+        "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
         "tech": ["data engineering", "apple", "climate tech", "healthcare"],
         "gaming": ["PlayStation Plus Monthly Games"]
     },
@@ -58,3 +58,4 @@ gazette_config = {
     # ── File paths ────────────────────────────────
     "recipient_name": "Scott"
 }
+
