@@ -4,6 +4,8 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
+import base64
+
 load_dotenv()
 
 import anthropic
@@ -14,6 +16,7 @@ from config.prompt_config import live_prompts
 class FeedSummarizer:
     def __init__(self, groups=None):
         self.PROMPTS = live_prompts
+        self.LOGO_B64 = self.encode_logo()
         
         self.ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
         self.MODEL = gazette_config["model"]
@@ -170,6 +173,14 @@ class FeedSummarizer:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(self.email_username, self.email_password)
             server.send_message(msg)
+
+    def encode_logo(self):
+        logo_path = os.path.join(self.SCRIPT_DIR, "gazette_logo.png")
+        if os.path.exists(logo_path):
+            with open(logo_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        return None
+
 
     def main(self):
         if not self.ANTHROPIC_API_KEY:
