@@ -55,4 +55,6 @@ gazette_config = {
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py
     "output_file": "./cache/rss_output.txt",  # written by rss_puller.py
     "summary_file": "rss_summary.txt",  # written by rss_summarizer.py
+    # ── File paths ────────────────────────────────
+    "recipient_name": "Scott"
 }
