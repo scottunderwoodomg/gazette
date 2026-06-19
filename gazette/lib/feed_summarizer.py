@@ -15,10 +15,11 @@ import markdown
 from config.gazette_config import gazette_config
 from config.prompt_config import live_prompts
 
+
 class FeedSummarizer:
     def __init__(self, groups=None):
         self.PROMPTS = live_prompts
-        
+
         self.ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
         self.MODEL = gazette_config["model"]
         self.INTERESTS = gazette_config["interests"]
@@ -83,10 +84,12 @@ class FeedSummarizer:
         preserving the original text block for each matched article verbatim.
         """
         interests_list = "\n".join(f"- {i}" for i in interests)
-        return self.PROMPTS["filter"].format_map({
-            "interests_list": interests_list,
-            "raw_text": raw_text,
-        })
+        return self.PROMPTS["filter"].format_map(
+            {
+                "interests_list": interests_list,
+                "raw_text": raw_text,
+            }
+        )
 
     def build_summary_prompt(self, filtered_text, interests):
         """Construct the summarisation prompt for the filtered article set."""
@@ -96,10 +99,12 @@ class FeedSummarizer:
             if interests
             else ""
         )
-        return self.PROMPTS["summary"].format_map({
-            "interest_note": interest_note,
-            "filtered_text": filtered_text,
-        })
+        return self.PROMPTS["summary"].format_map(
+            {
+                "interest_note": interest_note,
+                "filtered_text": filtered_text,
+            }
+        )
 
     def filter_articles(self, raw_text, interests, client, model):
         """
@@ -139,7 +144,7 @@ class FeedSummarizer:
     def write_summary(self, summaries_by_group, output_path):
         """Write per-group summaries to a single output file."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("=" * 60 + "\n")
             f.write("RSS ARTICLE SUMMARY\n")
@@ -162,16 +167,16 @@ class FeedSummarizer:
                 f.write("\n")
 
     def send_summary(self, summaries_by_group):
-        date_str       = datetime.now().strftime("%A, %B %-d, %Y")
+        date_str = datetime.now().strftime("%A, %B %-d, %Y")
         recipient_name = gazette_config.get("recipient_name", "Scott")
 
         html = self.build_email_html(summaries_by_group, recipient_name, date_str)
 
         # Use multipart/related to bundle HTML + inline image together
-        msg                 = MIMEMultipart("related")
-        msg["Subject"]      = f"Your Daily Gazette — {date_str}"
-        msg["From"]         = self.email_username
-        msg["To"]           = self.email_target
+        msg = MIMEMultipart("related")
+        msg["Subject"] = f"Your Daily Gazette — {date_str}"
+        msg["From"] = self.email_username
+        msg["To"] = self.email_target
 
         msg.attach(MIMEText(html, "html"))
 
@@ -206,7 +211,7 @@ class FeedSummarizer:
         for i, (group_name, summary) in enumerate(summaries_by_group.items()):
             color = section_colors[i % len(section_colors)]
             section_title = group_name.replace("_", " ").title()
-            content_html  = markdown.markdown(summary)
+            content_html = markdown.markdown(summary)
             sections_html += f"""
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
             <tr>
@@ -240,13 +245,13 @@ class FeedSummarizer:
 
         # Logo block
         if self.LOGO_B64:
-            logo_html = '''<img
+            logo_html = """<img
                 src="cid:gazette_logo"
                 width="96"
                 height="96"
                 alt="Gazette"
                 style="display:block;width:96px;height:96px;object-fit:contain;"
-            />'''
+            />"""
         else:
             logo_html = '<div style="width:64px;height:64px;background:#111;color:#fff;font-size:28px;font-weight:900;text-align:center;line-height:64px;font-family:Georgia,serif;">G</div>'
 
@@ -325,7 +330,6 @@ class FeedSummarizer:
     </html>"""
 
         return html
-
 
     def main(self):
         if not self.ANTHROPIC_API_KEY:
