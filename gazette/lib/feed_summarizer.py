@@ -12,9 +12,11 @@ from email.mime.image import MIMEImage
 
 import anthropic
 import markdown
-from config.gazette_config import gazette_config
+
 from config.prompt_config import live_prompts
 from config.email_content_config import email_content
+from config.gazette_config import load_gazette_config
+gazette_config = load_gazette_config()
 
 
 class FeedSummarizer:
