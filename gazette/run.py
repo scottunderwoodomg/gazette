@@ -5,7 +5,8 @@ import shutil
 from lib.rss_puller import RssPuller
 from lib.feed_summarizer import FeedSummarizer
 
-from config.gazette_config import gazette_config
+from config.gazette_config import load_gazette_config
+gazette_config = load_gazette_config()
 
 """
 Info goes here
@@ -64,7 +65,9 @@ class Gazette:
         articles_a = self.isolate_articles(content_a)
         articles_b = self.isolate_articles(content_b) if content_b else None
 
-        if articles_a == articles_b:
+        if os.environ.get("GAZETTE_ENV", "dev") == 'dev':
+            return True
+        elif articles_a == articles_b:
             print(f"Files are identical. No changes made.")
             return False
         else:

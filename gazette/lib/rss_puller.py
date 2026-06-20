@@ -4,7 +4,8 @@ import re
 from datetime import datetime, timezone
 import os
 
-from config.gazette_config import gazette_config
+from config.gazette_config import load_gazette_config
+gazette_config = load_gazette_config()
 
 
 # ─────────────────────────────────────────────

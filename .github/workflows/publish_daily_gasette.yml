@@ -18,3 +18,4 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_TARGET: ${{ secrets.EMAIL_TARGET }}
+          GAZETTE_ENV: ${{ secrets.GAZETTE_ENV }}
