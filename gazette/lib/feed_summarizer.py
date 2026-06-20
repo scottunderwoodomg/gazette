@@ -1,20 +1,27 @@
 import os
 import smtplib
+import base64
 from datetime import datetime
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+
 import anthropic
 import markdown
 from config.gazette_config import gazette_config
 from config.prompt_config import live_prompts
+from config.email_content_config import email_content
+
 
 class FeedSummarizer:
     def __init__(self, groups=None):
         self.PROMPTS = live_prompts
-        
+        self.email_content = email_content
+
         self.ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
         self.MODEL = gazette_config["model"]
         self.INTERESTS = gazette_config["interests"]
@@ -23,9 +30,12 @@ class FeedSummarizer:
         self.email_password = os.environ["GMAIL_APP_PASSWORD"]
         self.email_target = os.environ["EMAIL_TARGET"]
 
-        self.SCRIPT_DIR = "./cache/"
-        self.INPUT_FILE = os.path.join(self.SCRIPT_DIR, "latest_rss_output.txt")
-        self.OUTPUT_FILE = os.path.join(self.SCRIPT_DIR, "rss_summary.txt")
+        self.CACHE_DIR = "./cache/"
+        self.IMAGE_DIR = "../images/"
+        self.INPUT_FILE = os.path.join(self.CACHE_DIR, "latest_rss_output.txt")
+        self.OUTPUT_FILE = os.path.join(self.CACHE_DIR, "rss_summary.txt")
+
+        self.LOGO_B64 = self.encode_logo()
 
         all_groups = list(self.INTERESTS.keys())
         if groups:
@@ -76,10 +86,12 @@ class FeedSummarizer:
         preserving the original text block for each matched article verbatim.
         """
         interests_list = "\n".join(f"- {i}" for i in interests)
-        return self.PROMPTS["filter"].format_map({
-            "interests_list": interests_list,
-            "raw_text": raw_text,
-        })
+        return self.PROMPTS["filter"].format_map(
+            {
+                "interests_list": interests_list,
+                "raw_text": raw_text,
+            }
+        )
 
     def build_summary_prompt(self, filtered_text, interests):
         """Construct the summarisation prompt for the filtered article set."""
@@ -89,10 +101,12 @@ class FeedSummarizer:
             if interests
             else ""
         )
-        return self.PROMPTS["summary"].format_map({
-            "interest_note": interest_note,
-            "filtered_text": filtered_text,
-        })
+        return self.PROMPTS["summary"].format_map(
+            {
+                "interest_note": interest_note,
+                "filtered_text": filtered_text,
+            }
+        )
 
     def filter_articles(self, raw_text, interests, client, model):
         """
@@ -132,7 +146,7 @@ class FeedSummarizer:
     def write_summary(self, summaries_by_group, output_path):
         """Write per-group summaries to a single output file."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("=" * 60 + "\n")
             f.write("RSS ARTICLE SUMMARY\n")
@@ -155,21 +169,115 @@ class FeedSummarizer:
                 f.write("\n")
 
     def send_summary(self, summaries_by_group):
-        # Concatenate all group summaries into a single markdown string
-        summary_text = ""
-        for group_name, summary in summaries_by_group.items():
-            summary_text += f"# {group_name}\n\n"
-            summary_text += summary
-            summary_text += "\n\n"
-        html = markdown.markdown(summary_text)
-        msg = MIMEText(html,"html")
-        msg["Subject"] = f"Gazette Summary — {datetime.now().strftime('%Y-%m-%d')}"
+        date_str = datetime.now().strftime("%A, %B %-d, %Y")
+        recipient_name = gazette_config.get("recipient_name", "Scott")
+
+        html = self.build_email_html(summaries_by_group, recipient_name, date_str)
+
+        # Use multipart/related to bundle HTML + inline image together
+        msg = MIMEMultipart("related")
+        msg["Subject"] = f"Your Daily Gazette — {date_str}"
         msg["From"] = self.email_username
         msg["To"] = self.email_target
+
+        msg.attach(MIMEText(html, "html"))
+
+        # Attach logo with a Content-ID so the HTML can reference it
+        if self.LOGO_B64:
+            logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
+            with open(logo_path, "rb") as f:
+                logo_img = MIMEImage(f.read())
+            logo_img.add_header("Content-ID", "<gazette_logo>")
+            logo_img.add_header("Content-Disposition", "inline")
+            msg.attach(logo_img)
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(self.email_username, self.email_password)
             server.send_message(msg)
+
+        print(f"Email sent to {gazette_config.get("recipient_name", "Friend")}")
+
+    def encode_logo(self):
+        logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
+        if os.path.exists(logo_path):
+            with open(logo_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        return None
+
+    def build_email_html(self, summaries_by_group, recipient_name, date_str):
+        sections_html = ""
+        for i, (group_name, summary) in enumerate(summaries_by_group.items()):
+            section_title = group_name.replace("_", " ").upper()
+            content_html = markdown.markdown(summary)
+
+            content_html = (
+                content_html.replace(
+                    "<h1>",
+                    "<h1 style=\"font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#111111;margin:20px 0 4px 0;letter-spacing:-0.01em;\">",
+                )
+                .replace(
+                    "<h2>",
+                    "<h2 style=\"font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;color:#111111;margin:20px 0 4px 0;letter-spacing:-0.01em;\">",
+                )
+                .replace(
+                    "<h3>",
+                    "<h3 style=\"font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#444444;margin:14px 0 2px 0;\">",
+                )
+                .replace(
+                    "<p>",
+                    "<p style=\"font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.75;color:#333333;margin:0 0 10px 0;\">",
+                )
+                .replace("<ul>", '<ul style="margin:4px 0 14px 0;padding-left:18px;">')
+                .replace(
+                    "<li>",
+                    "<li style=\"font-family:'Trebuchet MS',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#333333;margin-bottom:8px;\">",
+                )
+                .replace(
+                    "<a ",
+                    '<a style="color:#111111;text-decoration:underline;font-weight:600;" ',
+                )
+            )
+
+            top_border = "" if i == 0 else "border-top:2px solid #111111;"
+
+            sections_html += self.email_content["sections_html"].format_map(
+                {
+                    "top_border": top_border,
+                    "section_title": section_title,
+                    "content_html": content_html,
+                }
+            )
+
+        if self.LOGO_B64:
+            logo_html = """<img
+                src="cid:gazette_logo"
+                width="120"
+                height="120"
+                alt="Gazette"
+                style="display:block;width:120px;height:120px;object-fit:contain;filter:brightness(0)invert(1);"
+            />"""
+        else:
+            logo_html = """<div style="
+                width:120px;height:120px;
+                background:#ffffff;
+                color:#111111;
+                font-size:56px;
+                font-weight:900;
+                text-align:center;
+                line-height:120px;
+                font-family:Georgia,serif;
+            ">G</div>"""
+
+        html = self.email_content["html_body"].format_map(
+            {
+                "logo_html": logo_html,
+                "recipient_name": recipient_name,
+                "date_str": date_str,
+                "sections_html": sections_html,
+            }
+        )
+
+        return html
 
     def main(self):
         if not self.ANTHROPIC_API_KEY:
