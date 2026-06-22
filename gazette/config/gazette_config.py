@@ -4,9 +4,7 @@ from datetime import date, timedelta
 gazette_config_dev = {
     # ── Puller settings ───────────────────────────
     "feeds": {
-        "tech": [
-            "http://feeds2.feedburner.com/thenextweb"
-        ],
+        "tech": ["http://feeds2.feedburner.com/thenextweb"],
     },
     "start_date": (date.today() - timedelta(days=1)).strftime(
         "%Y-%m-%d"
@@ -24,12 +22,17 @@ gazette_config_dev = {
     "output_file": "./cache/rss_output.txt",  # written by rss_puller.py
     "summary_file": "rss_summary.txt",  # written by rss_summarizer.py
     # ── File paths ────────────────────────────────
-    "recipient_name": "Scott"
+    "recipient_name": "Scott",
 }
 
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
     "feeds": {
+        "world_news": [
+            "https://reutersbest.com/feed/",
+            "	http://feeds.reuters.com/reuters/topNews",
+            "http://feeds.reuters.com/Reuters/worldNews",
+        ],
         "local_news": [
             "https://gothamist.com/feed",
             "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
@@ -43,12 +46,14 @@ gazette_config_prod = {
         "sports": [
             "https://www.nytimes.com/athletic/rss/news/",
             # "https://www.hoopshype.com/",
+            "https://www.espn.com/espn/rss/nba/news",
+            "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
         ],
         "tech": [
             "www.404media.co/rss",
             "https://feeds.arstechnica.com/arstechnica/index",
             "https://blog.miguelgrinberg.com/feed",
-            "http://feeds2.feedburner.com/thenextweb"
+            "http://feeds2.feedburner.com/thenextweb",
         ],
         "gaming": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
         "products": ["http://blog.feedbin.me/atom.xml"],
@@ -65,6 +70,7 @@ gazette_config_prod = {
     #   one of these interests will be included in the digest. Set to an empty list [] to include
     #   ALL articles regardless of topic.
     "interests": {
+        "world_news": ["Top Stories"],
         "local_news": [
             "transit",
             "SoHo",
@@ -75,27 +81,41 @@ gazette_config_prod = {
             "Extreme Weather",
         ],
         "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
-        "tech": ["data engineering", "apple", "climate tech", "healthcare"],
-        "gaming": ["PlayStation Plus Monthly Games"]
+        "tech": [
+            "data engineering",
+            "apple",
+            "climate tech",
+            "healthcare",
+            "Arc Browser",
+            "raindrop.io",
+            "Express VPN",
+            "Carrot Weather",
+            "Notion",
+        ],
+        "gaming": ["PlayStation Plus Monthly Games"],
+        "products": [],
     },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py
     "output_file": "./cache/rss_output.txt",  # written by rss_puller.py
     "summary_file": "rss_summary.txt",  # written by rss_summarizer.py
     # ── File paths ────────────────────────────────
-    "recipient_name": "Scott"
+    "recipient_name": "Scott",
 }
 
 
 # Registry — used by the loader below
 configs = {
-    "dev":  gazette_config_dev,
+    "dev": gazette_config_dev,
     "prod": gazette_config_prod,
 }
+
 
 def load_gazette_config():
     env = os.environ.get("GAZETTE_ENV", "dev")  # default to dev if unset
     if env not in configs:
-        raise ValueError(f"Unknown GAZETTE_ENV '{env}'. Must be one of: {list(configs.keys())}")
+        raise ValueError(
+            f"Unknown GAZETTE_ENV '{env}'. Must be one of: {list(configs.keys())}"
+        )
     print(f"[gazette] Loading config: {env}")
     return configs[env]
