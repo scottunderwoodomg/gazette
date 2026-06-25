@@ -27,12 +27,13 @@ gazette_config_dev = {
 
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
+    "active_topics": ["local_news", "sports", "tech", "gaming", "products"],
     "feeds": {
-        #"world_news": [
-        #    "https://reutersbest.com/feed/",
-        #    "	http://feeds.reuters.com/reuters/topNews",
-        #    "http://feeds.reuters.com/Reuters/worldNews",
-        #],
+        "world_news": [
+            "https://reutersbest.com/feed/",
+            "	http://feeds.reuters.com/reuters/topNews",
+            "http://feeds.reuters.com/Reuters/worldNews",
+        ],
         "local_news": [
             "https://gothamist.com/feed",
             "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
@@ -70,7 +71,7 @@ gazette_config_prod = {
     #   one of these interests will be included in the digest. Set to an empty list [] to include
     #   ALL articles regardless of topic.
     "interests": {
-        #"world_news": ["Top Stories"],
+        "world_news": ["Top Stories"],
         "local_news": [
             "transit",
             "SoHo",
@@ -111,6 +112,18 @@ configs = {
 }
 
 
+def filter_inactive_topics(config: dict) -> dict:
+    active_topics = config["active_topics"]
+    topic_keys = ["interests", "feeds"]
+    result = {}
+    for name, child in config.items():
+        if name in topic_keys:
+            result[name] = {k: v for k, v in child.items() if k in active_topics}
+        else:
+            result[name] = child
+    return result
+
+
 def load_gazette_config():
     env = os.environ.get("GAZETTE_ENV", "dev")  # default to dev if unset
     if env not in configs:
@@ -118,4 +131,6 @@ def load_gazette_config():
             f"Unknown GAZETTE_ENV '{env}'. Must be one of: {list(configs.keys())}"
         )
     print(f"[gazette] Loading config: {env}")
-    return configs[env]
+
+    active_topic_config = filter_inactive_topics(configs[env])
+    return active_topic_config
