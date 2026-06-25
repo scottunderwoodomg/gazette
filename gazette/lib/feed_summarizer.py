@@ -3,9 +3,6 @@ import smtplib
 import base64
 from datetime import datetime
 from email.mime.text import MIMEText
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage

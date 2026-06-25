@@ -1,9 +1,12 @@
 import re
 import os
 import shutil
+from dotenv import load_dotenv
 
-from lib.rss_puller import RssPuller
+load_dotenv()
+
 from lib.feed_summarizer import FeedSummarizer
+from lib.rss_puller import RssPuller
 
 from config.gazette_config import load_gazette_config
 gazette_config = load_gazette_config()
