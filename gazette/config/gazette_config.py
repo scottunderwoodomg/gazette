@@ -28,11 +28,11 @@ gazette_config_dev = {
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
     "feeds": {
-        "world_news": [
-            "https://reutersbest.com/feed/",
-            "	http://feeds.reuters.com/reuters/topNews",
-            "http://feeds.reuters.com/Reuters/worldNews",
-        ],
+        #"world_news": [
+        #    "https://reutersbest.com/feed/",
+        #    "	http://feeds.reuters.com/reuters/topNews",
+        #    "http://feeds.reuters.com/Reuters/worldNews",
+        #],
         "local_news": [
             "https://gothamist.com/feed",
             "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
@@ -70,7 +70,7 @@ gazette_config_prod = {
     #   one of these interests will be included in the digest. Set to an empty list [] to include
     #   ALL articles regardless of topic.
     "interests": {
-        "world_news": ["Top Stories"],
+        #"world_news": ["Top Stories"],
         "local_news": [
             "transit",
             "SoHo",
