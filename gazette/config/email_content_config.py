@@ -58,6 +58,7 @@ email_content = {
             <tr>
                 <td style="background-color:#ffffff;">
                 {sections_html}
+                {scoreboard_html}
                 </td>
             </tr>
     
