@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 gazette_config_dev = {
     # ── Puller settings ───────────────────────────
+    "active_topics": ["tech"],
     "feeds": {
         "tech": ["http://feeds2.feedburner.com/thenextweb"],
     },

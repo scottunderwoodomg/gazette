@@ -7,6 +7,7 @@ load_dotenv()
 
 from lib.feed_summarizer import FeedSummarizer
 from lib.rss_puller import RssPuller
+from lib.scoreboard import Scoreboard
 
 from config.gazette_config import load_gazette_config
 gazette_config = load_gazette_config()
@@ -22,12 +23,14 @@ class Gazette:
     def __init__(self):
         self.puller = RssPuller()
         self.summarizer = FeedSummarizer()
+        self.scoreboard = Scoreboard()
         self.latest_rss_pull_file = gazette_config["latest_output_file"]
         self.rss_pull_file = gazette_config["output_file"]
 
     def publish_gazette(self):
         """Pulls new articles, sumarizes target topics, and distributes via email"""
         self.puller.run_rss_puller()
+        self.scoreboard.run_scoreboard()
         if self.check_for_news(self.rss_pull_file, self.latest_rss_pull_file):
             self.summarizer.run_feed_summarizer()
         else:

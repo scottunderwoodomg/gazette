@@ -79,6 +79,19 @@ class FeedSummarizer:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
 
+    def read_scoreboard_cache(self):
+        """Read scoreboard_cache.json and return the games list, or [] if missing."""
+        import json
+        cache_path = os.path.join(self.CACHE_DIR, "scoreboard_cache.json")
+        if not os.path.exists(cache_path):
+            print("  No scoreboard cache found — skipping scores section.")
+            return []
+        with open(cache_path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        games = payload.get("games", [])
+        print(f"  Loaded {len(games)} game(s) from scoreboard cache.")
+        return games
+
     def build_filter_prompt(self, raw_text, interests):
         """
         Ask Claude to return only the articles relevant to the given interests,
@@ -167,11 +180,11 @@ class FeedSummarizer:
                 f.write(summary)
                 f.write("\n")
 
-    def send_summary(self, summaries_by_group):
+    def send_summary(self, summaries_by_group, scoreboard_html=""):
         date_str = datetime.now().strftime("%A, %B %-d, %Y")
         recipient_name = gazette_config.get("recipient_name", "Scott")
 
-        html = self.build_email_html(summaries_by_group, recipient_name, date_str)
+        html = self.build_email_html(summaries_by_group, recipient_name, date_str, scoreboard_html)
 
         # Use multipart/related to bundle HTML + inline image together
         msg = MIMEMultipart("related")
@@ -203,7 +216,7 @@ class FeedSummarizer:
                 return base64.b64encode(f.read()).decode("utf-8")
         return None
 
-    def build_email_html(self, summaries_by_group, recipient_name, date_str):
+    def build_email_html(self, summaries_by_group, recipient_name, date_str, scoreboard_html):
         sections_html = ""
         for i, (group_name, summary) in enumerate(summaries_by_group.items()):
             section_title = group_name.replace("_", " ").upper()
@@ -273,10 +286,135 @@ class FeedSummarizer:
                 "recipient_name": recipient_name,
                 "date_str": date_str,
                 "sections_html": sections_html,
+                "scoreboard_html": scoreboard_html
             }
         )
 
         return html
+
+    def build_scoreboard_html(self, games):
+        """
+        Render the scoreboard as an HTML section for the email.
+        Games must already be sorted by league then game_time_iso (scoreboard.py does this).
+        Presents in a 4-column grid with grey league header rows.
+        """
+        if not games:
+            return ""
+    
+        COLS = 4
+        from collections import OrderedDict
+    
+        by_league = OrderedDict()
+        for g in games:
+            by_league.setdefault(g["league"], []).append(g)
+    
+        rows = []
+        for league, league_games in by_league.items():
+            rows.append({"type": "header", "league": league})
+            for i in range(0, len(league_games), COLS):
+                rows.append({"type": "games", "games": league_games[i:i + COLS]})
+    
+        def render_game_card(g):
+            state = g.get("state", "pre")
+    
+            if state == "post":
+                away_score = int(g["away_score"]) if str(g.get("away_score","")).isdigit() else 0
+                home_score = int(g["home_score"]) if str(g.get("home_score","")).isdigit() else 0
+                away_bold  = "font-weight:700;" if away_score > home_score else "font-weight:400;"
+                home_bold  = "font-weight:700;" if home_score > away_score else "font-weight:400;"
+                score_block = f"""
+                <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
+                    <tr>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;{away_bold}color:#111111;padding:1px 0;">{g['away_abbr']}</td>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;{away_bold}color:#111111;padding:1px 0;text-align:right;">{g['away_score']}</td>
+                    </tr>
+                    <tr>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;{home_bold}color:#111111;padding:1px 0;">{g['home_abbr']}</td>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;{home_bold}color:#111111;padding:1px 0;text-align:right;">{g['home_score']}</td>
+                    </tr>
+                </table>
+                <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">Final</p>"""
+    
+            elif state == "in":
+                score_block = f"""
+                <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
+                    <tr>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['away_abbr']}</td>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:700;color:#111111;padding:1px 0;text-align:right;">{g['away_score']}</td>
+                    </tr>
+                    <tr>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['home_abbr']}</td>
+                    <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:700;color:#111111;padding:1px 0;text-align:right;">{g['home_score']}</td>
+                    </tr>
+                </table>
+                <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;font-weight:700;color:#111111;">{g.get('detail','In Progress')}</p>"""
+    
+            else:  # pre
+                score_block = f"""
+                <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
+                    <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['away_abbr']}</td></tr>
+                    <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['home_abbr']}</td></tr>
+                </table>
+                <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('kickoff', g.get('detail',''))}</p>"""
+    
+            next_line = ""
+            if g.get("next_opponent") and g.get("next_game_time"):
+                next_line = f"""<p style="margin:6px 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;line-height:1.4;">vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
+    
+            date_label = f'<p style="margin:0 0 2px 0;font-family:\'Trebuchet MS\',Arial,sans-serif;font-size:11px;color:#888888;">{g.get("kickoff","")}</p>' if state == "post" else ""
+    
+            return f"""<td style="width:25%;vertical-align:top;padding:12px 10px 12px 0;">
+            {date_label}
+            {score_block}
+            {next_line}
+            </td>"""
+    
+        rows_html = ""
+        for row in rows:
+            if row["type"] == "header":
+                rows_html += f"""
+                <tr>
+                <td colspan="{COLS}" style="
+                    background-color:#f2f2f2;
+                    padding:7px 10px;
+                    font-family:'Trebuchet MS',Arial,sans-serif;
+                    font-size:10px;
+                    font-weight:700;
+                    letter-spacing:0.18em;
+                    text-transform:uppercase;
+                    color:#444444;
+                    border-top:1px solid #e0e0e0;
+                ">{row['league']}</td>
+                </tr>"""
+            else:
+                game_cells  = "".join(render_game_card(g) for g in row["games"])
+                empty_cells = "".join(
+                    '<td style="width:25%;padding:12px 10px 12px 0;"></td>'
+                    for _ in range(COLS - len(row["games"]))
+                )
+                rows_html += f"<tr>{game_cells}{empty_cells}</tr>"
+    
+        return f"""
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:0;border-collapse:collapse;">
+        <tr>
+            <td style="background-color:#ffffff;padding:28px 36px 32px 36px;border-top:2px solid #111111;">
+            <p style="
+                margin:0 0 6px 0;
+                font-family:'Trebuchet MS',Arial,sans-serif;
+                font-size:9px;
+                font-weight:700;
+                letter-spacing:0.25em;
+                text-transform:uppercase;
+                color:#999999;
+            ">Scoreboard</p>
+            <div style="border-bottom:1px solid #e0e0e0;margin-bottom:16px;"></div>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                {rows_html}
+            </table>
+            </td>
+        </tr>
+        </table>
+        """
 
     def main(self):
         if not self.ANTHROPIC_API_KEY:
@@ -351,7 +489,10 @@ class FeedSummarizer:
             print("No summaries generated — no articles matched any group's interests.")
             return
 
-        self.send_summary(summaries_by_group)
+        games          = self.read_scoreboard_cache()
+        scoreboard_html = self.build_scoreboard_html(games)
+
+        self.send_summary(summaries_by_group, scoreboard_html)
 
         self.write_summary(summaries_by_group, self.OUTPUT_FILE)
         print(f"\nDone. Summary written to: {self.OUTPUT_FILE}")
