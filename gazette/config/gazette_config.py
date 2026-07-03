@@ -28,7 +28,7 @@ gazette_config_dev = {
 
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
-    "active_topics": ["local_news", "sports", "tech", "gaming", "products"],
+    "active_topics": ["local_news", "tech", "gaming", "products", "sports"],
     "feeds": {
         "world_news": [
             "https://reutersbest.com/feed/",
@@ -45,12 +45,6 @@ gazette_config_prod = {
             "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
             "https://nypost.com/feed/",
         ],
-        "sports": [
-            "https://www.nytimes.com/athletic/rss/news/",
-            # "https://www.hoopshype.com/",
-            "https://www.espn.com/espn/rss/nba/news",
-            "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
-        ],
         "tech": [
             "www.404media.co/rss",
             "https://feeds.arstechnica.com/arstechnica/index",
@@ -59,6 +53,12 @@ gazette_config_prod = {
         ],
         "gaming": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
         "products": ["http://blog.feedbin.me/atom.xml"],
+        "sports": [
+            "https://www.nytimes.com/athletic/rss/news/",
+            # "https://www.hoopshype.com/",
+            "https://www.espn.com/espn/rss/nba/news",
+            "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
+        ],
     },
     "start_date": (date.today() - timedelta(days=1)).strftime(
         "%Y-%m-%d"
@@ -82,7 +82,6 @@ gazette_config_prod = {
             "Rain",
             "Extreme Weather",
         ],
-        "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
         "tech": [
             "data engineering",
             "apple",
@@ -96,6 +95,7 @@ gazette_config_prod = {
         ],
         "gaming": ["PlayStation Plus Monthly Games"],
         "products": [],
+        "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
     },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py

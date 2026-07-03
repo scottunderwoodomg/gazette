@@ -50,6 +50,8 @@ live_prompts = {
         - Sources: [<name of website from url>](URL), [<name of website from url>](URL)...
 
         Rules:
+        - Do NOT include a generic top-level heading like "Major Themes" or any document or section title.
+        - Begin directly with the first ## theme heading.
         - Keep the overall output tight and scannable.
         - Summary should target a 100-120 word limit.
         - There should be no more than 3 topics summarized under each group.
@@ -61,7 +63,7 @@ live_prompts = {
         {filtered_text}
         --- ARTICLES END ---
     """,
-        "prod_summary_backup": """
+    "prod_summary_backup": """
         Below is a collection of RSS news articles with their titles, publication dates, links, and summaries.
         {interest_note}
         Your task:
