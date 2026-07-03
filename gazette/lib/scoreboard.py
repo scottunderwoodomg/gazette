@@ -25,7 +25,7 @@ TEAM_FILTERS = {
     "CFB":  [],
     "MLS":  [],
     "EPL":  [],
-    "WC":   [],
+    "WC":   ["USA","ENG","FRA"],
 }
 
 MAX_GAMES = 1000

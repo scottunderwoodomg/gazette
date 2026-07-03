@@ -46,10 +46,12 @@ live_prompts = {
         1. Identify the major themes or topics across all the articles.
         2. If there are more than 3 major themes or topics related to a given interst use your best judgement to only return 3 themes.
         3. For each theme, write a concise 1–2 sentence description.
-        4. Under each theme, produce a concise summary of all the articles relaated to the theme. Favor the existing information and only adjust the summary if sumbsequent articles on the same topic add to it in a meaningful way.  Below the summary, include a row of text links to the articles in question in the following format:
+        5. Under each theme, produce a concise summary of all the articles relaated to the theme. Favor the existing information and only adjust the summary if sumbsequent articles on the same topic add to it in a meaningful way.  Below the summary, include a row of text links to the articles in question in the following format:
         - Sources: [<name of website from url>](URL), [<name of website from url>](URL)...
 
         Rules:
+        - Do NOT include a generic top-level heading like "Major Themes" or any document or section title.
+        - Begin directly with the first ## theme heading.
         - Keep the overall output tight and scannable.
         - Summary should target a 100-120 word limit.
         - There should be no more than 3 topics summarized under each group.
@@ -61,7 +63,7 @@ live_prompts = {
         {filtered_text}
         --- ARTICLES END ---
     """,
-        "prod_summary_backup": """
+    "prod_summary_backup": """
         Below is a collection of RSS news articles with their titles, publication dates, links, and summaries.
         {interest_note}
         Your task:

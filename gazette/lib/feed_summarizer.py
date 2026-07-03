@@ -1,18 +1,18 @@
-import os
-import smtplib
 import base64
+import os
+import re
+import smtplib
 from datetime import datetime
-from email.mime.text import MIMEText
-
-from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import anthropic
 import markdown
-
-from config.prompt_config import live_prompts
 from config.email_content_config import email_content
 from config.gazette_config import load_gazette_config
+from config.prompt_config import live_prompts
+
 gazette_config = load_gazette_config()
 
 
@@ -30,7 +30,9 @@ class FeedSummarizer:
         self.email_target = os.environ["EMAIL_TARGET"]
 
         self.CACHE_DIR = "./cache/"
-        self.IMAGE_DIR = "../images/"
+        self.IMAGE_DIR = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "..", "images"
+        )
         self.INPUT_FILE = os.path.join(self.CACHE_DIR, "latest_rss_output.txt")
         self.OUTPUT_FILE = os.path.join(self.CACHE_DIR, "rss_summary.txt")
 
@@ -57,16 +59,18 @@ class FeedSummarizer:
         """
         Split raw article text into a dict of group_name: article_text
         based on GROUP: dividers written by the puller.
+        Skips groups with no articles.
         """
-        import re
-
         groups = {}
-        # Split on the group header lines
         parts = re.split(r"█{60}\nGROUP: (.+?)\n.*?█{60}", raw_text, flags=re.DOTALL)
-        # parts will be: [pre-content, group1_name, group1_body, group2_name, group2_body, ...]
-        it = iter(parts[1:])  # skip the file header before the first group
+        it = iter(parts[1:])
         for group_name, group_body in zip(it, it):
-            groups[group_name.strip()] = group_body.strip()
+            group_body = group_body.strip()
+            # Skip groups with no article entries
+            if not re.search(r"^\[\d+\]", group_body, re.MULTILINE):
+                print(f"  Skipping group '{group_name.strip()}' — no articles found.")
+                continue
+            groups[group_name.strip()] = group_body
         return groups
 
     def read_articles(self, path):
@@ -82,6 +86,7 @@ class FeedSummarizer:
     def read_scoreboard_cache(self):
         """Read scoreboard_cache.json and return the games list, or [] if missing."""
         import json
+
         cache_path = os.path.join(self.CACHE_DIR, "scoreboard_cache.json")
         if not os.path.exists(cache_path):
             print("  No scoreboard cache found — skipping scores section.")
@@ -184,7 +189,9 @@ class FeedSummarizer:
         date_str = datetime.now().strftime("%A, %B %-d, %Y")
         recipient_name = gazette_config.get("recipient_name", "Scott")
 
-        html = self.build_email_html(summaries_by_group, recipient_name, date_str, scoreboard_html)
+        html = self.build_email_html(
+            summaries_by_group, recipient_name, date_str, scoreboard_html
+        )
 
         # Use multipart/related to bundle HTML + inline image together
         msg = MIMEMultipart("related")
@@ -196,9 +203,7 @@ class FeedSummarizer:
 
         # Attach logo with a Content-ID so the HTML can reference it
         if self.LOGO_B64:
-            logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
-            with open(logo_path, "rb") as f:
-                logo_img = MIMEImage(f.read())
+            logo_img = MIMEImage(base64.b64decode(self.LOGO_B64))
             logo_img.add_header("Content-ID", "<gazette_logo>")
             logo_img.add_header("Content-Disposition", "inline")
             msg.attach(logo_img)
@@ -207,16 +212,20 @@ class FeedSummarizer:
             server.login(self.email_username, self.email_password)
             server.send_message(msg)
 
-        print(f"Email sent to {gazette_config.get("recipient_name", "Friend")}")
+        print(f"Email sent to {gazette_config.get('recipient_name', 'Friend')}")
 
     def encode_logo(self):
         logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
+        print(f"[encode_logo] Looking at: {os.path.normpath(logo_path)}")
+        print(f"[encode_logo] Exists: {os.path.exists(logo_path)}")
         if os.path.exists(logo_path):
             with open(logo_path, "rb") as f:
                 return base64.b64encode(f.read()).decode("utf-8")
         return None
 
-    def build_email_html(self, summaries_by_group, recipient_name, date_str, scoreboard_html):
+    def build_email_html(
+        self, summaries_by_group, recipient_name, date_str, scoreboard_html
+    ):
         sections_html = ""
         for i, (group_name, summary) in enumerate(summaries_by_group.items()):
             section_title = group_name.replace("_", " ").upper()
@@ -261,6 +270,7 @@ class FeedSummarizer:
             )
 
         if self.LOGO_B64:
+            print(f"Logo loaded: {len(self.LOGO_B64)} chars")
             logo_html = """<img
                 src="cid:gazette_logo"
                 width="120"
@@ -269,6 +279,7 @@ class FeedSummarizer:
                 style="display:block;width:120px;height:120px;object-fit:contain;filter:brightness(0)invert(1);"
             />"""
         else:
+            print(f"Logo NOT loaded — falling back to G div")
             logo_html = """<div style="
                 width:120px;height:120px;
                 background:#ffffff;
@@ -286,7 +297,7 @@ class FeedSummarizer:
                 "recipient_name": recipient_name,
                 "date_str": date_str,
                 "sections_html": sections_html,
-                "scoreboard_html": scoreboard_html
+                "scoreboard_html": scoreboard_html,
             }
         )
 
@@ -300,28 +311,44 @@ class FeedSummarizer:
         """
         if not games:
             return ""
-    
+
         COLS = 4
         from collections import OrderedDict
-    
+
         by_league = OrderedDict()
         for g in games:
             by_league.setdefault(g["league"], []).append(g)
-    
+
         rows = []
         for league, league_games in by_league.items():
             rows.append({"type": "header", "league": league})
             for i in range(0, len(league_games), COLS):
-                rows.append({"type": "games", "games": league_games[i:i + COLS]})
-    
+                rows.append({"type": "games", "games": league_games[i : i + COLS]})
+
         def render_game_card(g):
             state = g.get("state", "pre")
-    
+
             if state == "post":
-                away_score = int(g["away_score"]) if str(g.get("away_score","")).isdigit() else 0
-                home_score = int(g["home_score"]) if str(g.get("home_score","")).isdigit() else 0
-                away_bold  = "font-weight:700;" if away_score > home_score else "font-weight:400;"
-                home_bold  = "font-weight:700;" if home_score > away_score else "font-weight:400;"
+                away_score = (
+                    int(g["away_score"])
+                    if str(g.get("away_score", "")).isdigit()
+                    else 0
+                )
+                home_score = (
+                    int(g["home_score"])
+                    if str(g.get("home_score", "")).isdigit()
+                    else 0
+                )
+                away_bold = (
+                    "font-weight:700;"
+                    if away_score > home_score
+                    else "font-weight:400;"
+                )
+                home_bold = (
+                    "font-weight:700;"
+                    if home_score > away_score
+                    else "font-weight:400;"
+                )
                 score_block = f"""
                 <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
                     <tr>
@@ -334,7 +361,7 @@ class FeedSummarizer:
                     </tr>
                 </table>
                 <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">Final</p>"""
-    
+
             elif state == "in":
                 score_block = f"""
                 <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
@@ -348,7 +375,7 @@ class FeedSummarizer:
                     </tr>
                 </table>
                 <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;font-weight:700;color:#111111;">{g.get('detail','In Progress')}</p>"""
-    
+
             else:  # pre
                 score_block = f"""
                 <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
@@ -356,19 +383,23 @@ class FeedSummarizer:
                     <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['home_abbr']}</td></tr>
                 </table>
                 <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('kickoff', g.get('detail',''))}</p>"""
-    
+
             next_line = ""
             if g.get("next_opponent") and g.get("next_game_time"):
                 next_line = f"""<p style="margin:6px 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;line-height:1.4;">vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
-    
-            date_label = f'<p style="margin:0 0 2px 0;font-family:\'Trebuchet MS\',Arial,sans-serif;font-size:11px;color:#888888;">{g.get("kickoff","")}</p>' if state == "post" else ""
-    
+
+            date_label = (
+                f'<p style="margin:0 0 2px 0;font-family:\'Trebuchet MS\',Arial,sans-serif;font-size:11px;color:#888888;">{g.get("kickoff","")}</p>'
+                if state == "post"
+                else ""
+            )
+
             return f"""<td style="width:25%;vertical-align:top;padding:12px 10px 12px 0;">
             {date_label}
             {score_block}
             {next_line}
             </td>"""
-    
+
         rows_html = ""
         for row in rows:
             if row["type"] == "header":
@@ -387,13 +418,13 @@ class FeedSummarizer:
                 ">{row['league']}</td>
                 </tr>"""
             else:
-                game_cells  = "".join(render_game_card(g) for g in row["games"])
+                game_cells = "".join(render_game_card(g) for g in row["games"])
                 empty_cells = "".join(
                     '<td style="width:25%;padding:12px 10px 12px 0;"></td>'
                     for _ in range(COLS - len(row["games"]))
                 )
                 rows_html += f"<tr>{game_cells}{empty_cells}</tr>"
-    
+
         return f"""
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:0;border-collapse:collapse;">
         <tr>
@@ -489,7 +520,7 @@ class FeedSummarizer:
             print("No summaries generated — no articles matched any group's interests.")
             return
 
-        games          = self.read_scoreboard_cache()
+        games = self.read_scoreboard_cache()
         scoreboard_html = self.build_scoreboard_html(games)
 
         self.send_summary(summaries_by_group, scoreboard_html)
