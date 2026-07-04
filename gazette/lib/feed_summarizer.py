@@ -379,14 +379,11 @@ class FeedSummarizer:
             else:  # pre
                 score_block = f"""
                 <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 8px 0;">
-                    <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['away_abbr']}</td></tr>
-                    <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['home_abbr']}</td></tr>
-                </table>
-                <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('kickoff', g.get('detail',''))}</p>"""
+                </table>"""
 
             next_line = ""
             if g.get("next_opponent") and g.get("next_game_time"):
-                next_line = f"""<p style="margin:6px 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;line-height:1.4;">vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
+                next_line = f"""<hr><p style="margin:6px 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;line-height:1.4;">Next {g['matched_team']} vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
 
             date_label = (
                 f'<p style="margin:0 0 2px 0;font-family:\'Trebuchet MS\',Arial,sans-serif;font-size:11px;color:#888888;">{g.get("kickoff","")}</p>'
@@ -518,12 +515,18 @@ class FeedSummarizer:
 
         if not summaries_by_group:
             print("No summaries generated — no articles matched any group's interests.")
-            return
 
-        games = self.read_scoreboard_cache()
+        games           = self.read_scoreboard_cache()
         scoreboard_html = self.build_scoreboard_html(games)
+
+        if not summaries_by_group and not scoreboard_html:
+            print("Nothing to send — no summaries and no scoreboard data.")
+            return
 
         self.send_summary(summaries_by_group, scoreboard_html)
 
-        self.write_summary(summaries_by_group, self.OUTPUT_FILE)
-        print(f"\nDone. Summary written to: {self.OUTPUT_FILE}")
+        if summaries_by_group:
+            self.write_summary(summaries_by_group, self.OUTPUT_FILE)
+            print(f"\nDone. Summary written to: {self.OUTPUT_FILE}")
+        else:
+            print("\nDone. Scoreboard-only email sent.")
