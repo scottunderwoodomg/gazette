@@ -19,6 +19,13 @@ gazette_config_dev = {
     "interests": {
         "tech": ["AI"],
     },
+    # ── Scoreboard Config ────────────────────────────────
+    "score_endpoints": {
+        "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"
+    },
+    "team_filters": {
+        "MLB":  ["CLE"]
+    },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py
     "output_file": "./cache/rss_output.txt",  # written by rss_puller.py
@@ -97,6 +104,23 @@ gazette_config_prod = {
         "gaming": ["PlayStation Plus Monthly Games"],
         "products": [],
         "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
+    },
+    # ── Scoreboard Config ────────────────────────────────
+    "score_endpoints": {
+    "NBA":  "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+    #"WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
+    #"NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+    #"CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
+    #"NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
+    "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+    #"MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
+    #"EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+    "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
+    },
+    "team_filters": {
+        "NBA":  ["CLE"],
+        "MLB":  ["CLE"],
+        "WC":   ["USA","ENG","FRA"],
     },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py

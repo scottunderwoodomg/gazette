@@ -3,40 +3,20 @@ import json
 import os
 from datetime import date, datetime, timezone, timedelta
 
+from config.gazette_config import load_gazette_config
+gazette_config = load_gazette_config()
 
-ENDPOINTS = {
-    "NBA":  "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
-    #"WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
-    #"NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-    #"CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
-    #"NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
-    "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-    #"MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-    #"EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-    "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
-}
 
-TEAM_FILTERS = {
-    "NBA":  ["CLE"],
-    "NFL":  [],
-    "NHL":  [],
-    "MLB":  ["CLE"],
-    "WNBA": [],
-    "CFB":  [],
-    "MLS":  [],
-    "EPL":  [],
-    "WC":   ["USA","ENG","FRA"],
-}
-
-MAX_GAMES = 1000
-
-LEAGUE_ORDER = list(ENDPOINTS.keys())
 
 
 class Scoreboard():
     def __init__(self):
         self.script_dir  = "./cache/"
         self.cache_file  = os.path.join(self.script_dir, "scoreboard_cache.json")
+        self.ENDPOINTS = gazette_config["score_endpoints"]
+        self.TEAM_FILTERS = gazette_config["team_filters"]
+        self.LEAGUE_ORDER = list(self.ENDPOINTS.keys())
+        self.MAX_GAMES = 1000
 
     def run_scoreboard(self):
         self.main()
@@ -184,7 +164,7 @@ class Scoreboard():
         errors    = []
         date_offset = -1
 
-        for league, base_url in ENDPOINTS.items():
+        for league, base_url in self.ENDPOINTS.items():
             date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
             url = f"{base_url}?dates={date_str}"
 
@@ -200,7 +180,7 @@ class Scoreboard():
             print(f"  {league} - {date_str}")
             print(f"{'─'*50}")
 
-            filters = TEAM_FILTERS.get(league, [])
+            filters = self.TEAM_FILTERS.get(league, [])
             matched_events = []
             for e in events:
                 if not self.within_24hrs(e):
@@ -220,7 +200,7 @@ class Scoreboard():
 
             print(f"  {len(events)} game(s)")
 
-            for event, matched_team in events[:MAX_GAMES]:
+            for event, matched_team in events[:self.MAX_GAMES]:
                 game = self.parse_game(event, league)
                 game["matched_team"] = matched_team
                 if game["state"] == "pre":
@@ -229,8 +209,8 @@ class Scoreboard():
                 print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
 
         # ── Attach next game info to the most recent post/in game per filtered team ──
-        for league, base_url in ENDPOINTS.items():
-            filters = TEAM_FILTERS.get(league, [])
+        for league, base_url in self.ENDPOINTS.items():
+            filters = self.TEAM_FILTERS.get(league, [])
             if not filters:
                 continue
 
@@ -283,7 +263,7 @@ class Scoreboard():
 
         # ── Sort and save ──────────────────────────────────────────────
         def sort_key(g):
-            league_idx = LEAGUE_ORDER.index(g["league"]) if g["league"] in LEAGUE_ORDER else 999
+            league_idx = self.LEAGUE_ORDER.index(g["league"]) if g["league"] in self.LEAGUE_ORDER else 999
             return (league_idx, g["game_time_iso"])
 
         all_games.sort(key=sort_key)
