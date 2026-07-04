@@ -3,7 +3,8 @@ from datetime import date, timedelta
 
 gazette_config_dev = {
     # ── Puller settings ───────────────────────────
-    "active_topics": ["tech"],
+    "active_topics": [],
+    #"active_topics": ["tech"],
     "feeds": {
         "tech": ["http://feeds2.feedburner.com/thenextweb"],
     },
@@ -16,7 +17,7 @@ gazette_config_dev = {
     # ── Summarizer settings ───────────────────────
     "model": "claude-haiku-4-5-20251001",
     "interests": {
-        "tech": ["AI", "apple", "climate tech"],
+        "tech": ["AI"],
     },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py

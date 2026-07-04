@@ -1,7 +1,7 @@
 import urllib.request
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 
 ENDPOINTS = {
@@ -172,41 +172,45 @@ class Scoreboard():
         all_games = []
         errors    = []
 
-        for league, url in ENDPOINTS.items():
-            print(f"\n{'─'*50}")
-            print(f"  {league}")
-            print(f"{'─'*50}")
+        for league, base_url in ENDPOINTS.items():
+            for date_offset in [-1, 0]:  # yesterday and today
+                date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
+                url = f"{base_url}?dates={date_str}"
 
-            try:
-                data   = self.fetch(url)
-                events = data.get("events", [])
-            except Exception as e:
-                print(f"  ERROR fetching {league}: {e}")
-                errors.append((league, str(e)))
-                continue
+                try:
+                    data   = self.fetch(url)
+                    events = data.get("events", [])
+                except Exception as e:
+                    print(f"  ERROR fetching {league}: {e}")
+                    errors.append((league, str(e)))
+                    continue
 
-            filters = TEAM_FILTERS.get(league, [])
-            events  = [e for e in events if self.within_24hrs(e) and self.team_matches(e, filters)]
+                print(f"\n{'─'*50}")
+                print(f"  {league} - {date_str}")
+                print(f"{'─'*50}")
 
-            if not events:
-                print("  No games in last 24hrs")
-                continue
+                filters = TEAM_FILTERS.get(league, [])
+                events  = [e for e in events if self.within_24hrs(e) and self.team_matches(e, filters)]
 
-            print(f"  {len(events)} game(s)")
+                if not events:
+                    print("  No games in last 24hrs")
+                    continue
 
-            for event in events[:MAX_GAMES]:
-                game = self.parse_game(event, league)
+                print(f"  {len(events)} game(s)")
 
-                # For filtered teams, look up next opponent
-                if filters:
-                    for team_abbr in filters:
-                        if team_abbr in (game["away_abbr"], game["home_abbr"]):
-                            opponent, next_time = self.find_next_game(league, url, team_abbr)
-                            game["next_opponent"]  = opponent
-                            game["next_game_time"] = next_time
+                for event in events[:MAX_GAMES]:
+                    game = self.parse_game(event, league)
 
-                all_games.append(game)
-                print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
+                    # For filtered teams, look up next opponent
+                    if filters:
+                        for team_abbr in filters:
+                            if team_abbr in (game["away_abbr"], game["home_abbr"]):
+                                opponent, next_time = self.find_next_game(league, url, team_abbr)
+                                game["next_opponent"]  = opponent
+                                game["next_game_time"] = next_time
+
+                    all_games.append(game)
+                    print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
 
         # Sort: by league order first, then game time within league
         def sort_key(g):
