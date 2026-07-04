@@ -64,6 +64,16 @@ class Scoreboard():
         abbrevs = [c.get("team", {}).get("abbreviation", "") for c in competitors]
         return any(f in abbrevs for f in filters)
 
+    def isolate_opponent(self, game):
+        print(game)
+        #return [game["away_abbr"],game["home_abbr"]].remove(game["matched_team"])[0]
+        return next(t for t in [game["away_abbr"], game["home_abbr"]] if t != game["matched_team"])
+    
+    def set_next_game_values(self, game):
+        game["next_game_time"] = game["kickoff"]
+        game["next_opponent"] = self.isolate_opponent(game)
+        return game
+
     # ── Parse ─────────────────────────────────────────────────────
 
     def parse_game(self, event, league):
@@ -103,6 +113,7 @@ class Scoreboard():
             "home_score":   "",
             "next_opponent": "",               # populated below for filtered teams
             "next_game_time": "",
+            "matched_team":   ""
         }
 
         if away:
@@ -171,48 +182,106 @@ class Scoreboard():
     def main(self):
         all_games = []
         errors    = []
+        date_offset = -1
 
         for league, base_url in ENDPOINTS.items():
-            for date_offset in [-1, 0]:  # yesterday and today
-                date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
-                url = f"{base_url}?dates={date_str}"
+            date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
+            url = f"{base_url}?dates={date_str}"
 
-                try:
-                    data   = self.fetch(url)
-                    events = data.get("events", [])
-                except Exception as e:
-                    print(f"  ERROR fetching {league}: {e}")
-                    errors.append((league, str(e)))
+            try:
+                data   = self.fetch(url)
+                events = data.get("events", [])
+            except Exception as e:
+                print(f"  ERROR fetching {league} {date_str}: {e}")
+                errors.append((league, str(e)))
+                continue
+
+            print(f"\n{'─'*50}")
+            print(f"  {league} - {date_str}")
+            print(f"{'─'*50}")
+
+            filters = TEAM_FILTERS.get(league, [])
+            matched_events = []
+            for e in events:
+                if not self.within_24hrs(e):
+                    continue
+                competitors = e.get("competitions", [{}])[0].get("competitors", [])
+                abbrevs = [c.get("team", {}).get("abbreviation", "") for c in competitors]
+                for f in filters:
+                    if f in abbrevs:
+                        matched_events.append((e, f))  # tuple of (event, matched_team)
+                        break  # avoid duplicating if somehow both filters match
+
+            events = matched_events
+
+            if not events:
+                print("  No games in last 24hrs")
+                continue
+
+            print(f"  {len(events)} game(s)")
+
+            for event, matched_team in events[:MAX_GAMES]:
+                game = self.parse_game(event, league)
+                game["matched_team"] = matched_team
+                if game["state"] == "pre":
+                    game = self.set_next_game_values(game)
+                all_games.append(game)
+                print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
+
+        # ── Attach next game info to the most recent post/in game per filtered team ──
+        for league, base_url in ENDPOINTS.items():
+            filters = TEAM_FILTERS.get(league, [])
+            if not filters:
+                continue
+
+            for team_abbr in filters:
+                # Find the most recent completed/live game for this team in this league
+                team_games = [
+                    g for g in all_games
+                    if g["league"] == league
+                    and g["state"] in ("post", "in")
+                    and team_abbr in (g["away_abbr"], g["home_abbr"])
+                ]
+                if not team_games:
                     continue
 
-                print(f"\n{'─'*50}")
-                print(f"  {league} - {date_str}")
-                print(f"{'─'*50}")
+                # Sort by game time and take the most recent
+                team_games.sort(key=lambda g: g["game_time_iso"], reverse=True)
+                last_game = team_games[0]
 
-                filters = TEAM_FILTERS.get(league, [])
-                events  = [e for e in events if self.within_24hrs(e) and self.team_matches(e, filters)]
+                # Look up next opponent using today's endpoint (pre-game events)
+                today_str = date.today().strftime("%Y%m%d")
+                url = f"{base_url}?dates={today_str}"
+                opponent, next_time = self.find_next_game(league, url, team_abbr)
 
-                if not events:
-                    print("  No games in last 24hrs")
-                    continue
+                # If today has nothing, try tomorrow
+                if not opponent:
+                    tomorrow_str = (date.today() + timedelta(days=1)).strftime("%Y%m%d")
+                    url = f"{base_url}?dates={tomorrow_str}"
+                    opponent, next_time = self.find_next_game(league, url, team_abbr)
 
-                print(f"  {len(events)} game(s)")
+                last_game["next_opponent"]  = opponent
+                last_game["next_game_time"] = next_time
+                print(f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}")
 
-                for event in events[:MAX_GAMES]:
-                    game = self.parse_game(event, league)
+        # ── Remove pre-game cards for teams that already have a completed game ──
+        covered_teams_by_league = {}
+        for g in all_games:
+            if g["state"] in ("post", "in"):
+                covered_teams_by_league.setdefault(g["league"], set())
+                covered_teams_by_league[g["league"]].add(g["away_abbr"])
+                covered_teams_by_league[g["league"]].add(g["home_abbr"])
 
-                    # For filtered teams, look up next opponent
-                    if filters:
-                        for team_abbr in filters:
-                            if team_abbr in (game["away_abbr"], game["home_abbr"]):
-                                opponent, next_time = self.find_next_game(league, url, team_abbr)
-                                game["next_opponent"]  = opponent
-                                game["next_game_time"] = next_time
+        all_games = [
+            g for g in all_games
+            if not (
+                g["state"] == "pre"
+                and g["away_abbr"] in covered_teams_by_league.get(g["league"], set())
+                and g["home_abbr"] in covered_teams_by_league.get(g["league"], set())
+            )
+        ]
 
-                    all_games.append(game)
-                    print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
-
-        # Sort: by league order first, then game time within league
+        # ── Sort and save ──────────────────────────────────────────────
         def sort_key(g):
             league_idx = LEAGUE_ORDER.index(g["league"]) if g["league"] in LEAGUE_ORDER else 999
             return (league_idx, g["game_time_iso"])
@@ -223,7 +292,7 @@ class Scoreboard():
         if errors:
             print(f"\n{len(errors)} league(s) had errors:")
             for league, err in errors:
-                print(f"  • {league}: {err}")
+                print(f"  • {url}\n    {err}")
 
 
 if __name__ == "__main__":
