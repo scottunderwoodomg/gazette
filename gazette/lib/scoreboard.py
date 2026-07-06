@@ -162,51 +162,53 @@ class Scoreboard():
     def main(self):
         all_games = []
         errors    = []
-        date_offset = -1
+        #date_offset = -1
+        date_offsets = [-1,0,1]
 
         for league, base_url in self.ENDPOINTS.items():
-            date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
-            url = f"{base_url}?dates={date_str}"
-
-            try:
-                data   = self.fetch(url)
-                events = data.get("events", [])
-            except Exception as e:
-                print(f"  ERROR fetching {league} {date_str}: {e}")
-                errors.append((league, str(e)))
-                continue
-
-            print(f"\n{'─'*50}")
-            print(f"  {league} - {date_str}")
-            print(f"{'─'*50}")
-
-            filters = self.TEAM_FILTERS.get(league, [])
-            matched_events = []
-            for e in events:
-                if not self.within_24hrs(e):
+            for date_offset in date_offsets:
+                date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
+                url = f"{base_url}?dates={date_str}"
+                
+                try:
+                    data   = self.fetch(url)
+                    events = data.get("events", [])
+                except Exception as e:
+                    print(f"  ERROR fetching {league} {date_str}: {e}")
+                    errors.append((league, str(e)))
                     continue
-                competitors = e.get("competitions", [{}])[0].get("competitors", [])
-                abbrevs = [c.get("team", {}).get("abbreviation", "") for c in competitors]
-                for f in filters:
-                    if f in abbrevs:
-                        matched_events.append((e, f))  # tuple of (event, matched_team)
-                        break  # avoid duplicating if somehow both filters match
 
-            events = matched_events
+                print(f"\n{'─'*50}")
+                print(f"  {league} - {date_str}")
+                print(f"{'─'*50}")
 
-            if not events:
-                print("  No games in last 24hrs")
-                continue
+                filters = self.TEAM_FILTERS.get(league, [])
+                matched_events = []
+                for e in events:
+                    if not self.within_24hrs(e):
+                        continue
+                    competitors = e.get("competitions", [{}])[0].get("competitors", [])
+                    abbrevs = [c.get("team", {}).get("abbreviation", "") for c in competitors]
+                    for f in filters:
+                        if f in abbrevs:
+                            matched_events.append((e, f))  # tuple of (event, matched_team)
+                            break  # avoid duplicating if somehow both filters match
 
-            print(f"  {len(events)} game(s)")
+                events = matched_events
 
-            for event, matched_team in events[:self.MAX_GAMES]:
-                game = self.parse_game(event, league)
-                game["matched_team"] = matched_team
-                if game["state"] == "pre":
-                    game = self.set_next_game_values(game)
-                all_games.append(game)
-                print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
+                if not events:
+                    print("  No games in last 24hrs")
+                    continue
+
+                print(f"  {len(events)} game(s)")
+
+                for event, matched_team in events[:self.MAX_GAMES]:
+                    game = self.parse_game(event, league)
+                    game["matched_team"] = matched_team
+                    if game["state"] == "pre":
+                        game = self.set_next_game_values(game)
+                    all_games.append(game)
+                    print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
 
         # ── Attach next game info to the most recent post/in game per filtered team ──
         for league, base_url in self.ENDPOINTS.items():

@@ -21,10 +21,13 @@ gazette_config_dev = {
     },
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
-        "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"
+        "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+        #"WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
+        "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
     },
     "team_filters": {
-        "MLB":  ["CLE"]
+        "MLB":  ["CLE"],
+        "WC":   ["USA","ENG","FRA"],
     },
     # ── File paths ────────────────────────────────
     "latest_output_file": "./cache/latest_rss_output.txt",  # the last file written by rss_puller.py
