@@ -10,6 +10,8 @@ from lib.gazette_email import GazetteEmail
 from lib.rss_puller import RssPuller
 from lib.scoreboard import Scoreboard
 
+from utils.walkscript import print_dir_tree
+
 from config.gazette_config import load_gazette_config
 
 gazette_config = load_gazette_config()
@@ -27,14 +29,21 @@ class Gazette:
         self.summarizer = FeedSummarizer()
         self.scoreboard = Scoreboard()
         self.emailer = GazetteEmail()
+        self.walkpath = os.path.dirname(os.path.abspath(__file__))
 
         self.latest_rss_pull_file = gazette_config["latest_output_file"]
         self.rss_pull_file = gazette_config["output_file"]
 
     def publish_gazette(self):
         """Pulls new articles, summarises target topics, and distributes via email."""
+        print("initial walkscript ------------------")
+        print_dir_tree(self.walkpath)
         self.puller.run_rss_puller()
+        print("post rss pull walkscript ------------------")
+        print_dir_tree(self.walkpath)
         self.scoreboard.run_scoreboard()
+        print("post scoreboard pull walkscript ------------------")
+        print_dir_tree(self.walkpath)
 
         if self.check_for_news(self.rss_pull_file, self.latest_rss_pull_file):
             self.summarizer.run_feed_summarizer()
