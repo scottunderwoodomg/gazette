@@ -11,8 +11,10 @@ gazette_config = load_gazette_config()
 
 class Scoreboard():
     def __init__(self):
-        self.script_dir  = "./cache/"
-        self.cache_file  = os.path.join(self.script_dir, "scoreboard_cache.json")
+        self.CACHE_DIR = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
+        )
+        self.cache_file  = os.path.join(self.CACHE_DIR, "scoreboard_cache.json")
         self.ENDPOINTS = gazette_config["score_endpoints"]
         self.TEAM_FILTERS = gazette_config["team_filters"]
         self.LEAGUE_ORDER = list(self.ENDPOINTS.keys())

@@ -11,7 +11,9 @@ gazette_config = load_gazette_config()
 # ─────────────────────────────────────────────
 class RssPuller():
     def __init__(self, groups=None):
-        self.script_dir  = "./cache/"
+        self.CACHE_DIR = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
+        )
 
         self.rss_feeds = gazette_config["feeds"]
         self.start_date = gazette_config["start_date"]  # YYYY-MM-DD
@@ -84,7 +86,7 @@ class RssPuller():
 
 
     def write_output(self, all_articles_by_group, feeds_by_group, start, end):
-        output_path = os.path.join(self.script_dir, "rss_output.txt")
+        output_path = os.path.join(self.CACHE_DIR, "rss_output.txt")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         total_articles = sum(len(a) for a in all_articles_by_group.values())
