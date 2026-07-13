@@ -1,5 +1,6 @@
 import urllib.request
 import json
+import logging
 import os
 from datetime import date, datetime, timezone, timedelta
 
@@ -7,6 +8,8 @@ from config.gazette_config import load_gazette_config
 from zoneinfo import ZoneInfo
 
 gazette_config = load_gazette_config()
+logger = logging.getLogger(__name__)
+
 EASTERN = ZoneInfo("America/New_York")
 
 
@@ -119,7 +122,7 @@ class Scoreboard:
         }
         with open(self.SCOREBOARD_CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
-        print(f"  Scoreboard cached → {self.SCOREBOARD_CACHE_FILE}")
+        logger.debug(f"  Scoreboard cached → {self.SCOREBOARD_CACHE_FILE}")
 
     # ── Main ──────────────────────────────────────────────────────
 
@@ -139,13 +142,13 @@ class Scoreboard:
                     data = self.fetch(url)
                     events = data.get("events", [])
                 except Exception as e:
-                    print(f"  ERROR fetching {league} {date_str}: {e}")
+                    logger.error(f"  ERROR fetching {league} {date_str}: {e}")
                     errors.append((league, str(e)))
                     continue
 
-                print(f"\n{'─'*50}")
-                print(f"  {league} - {date_str}")
-                print(f"{'─'*50}")
+                logger.debug(f"\n{'─'*50}")
+                logger.debug(f"  {league} - {date_str}")
+                logger.debug(f"{'─'*50}")
 
                 filters = self.TEAM_FILTERS.get(league, [])
                 matched_events = []
@@ -161,10 +164,10 @@ class Scoreboard:
                 events = matched_events
 
                 if not events:
-                    print("  No games in last 24hrs")
+                    logger.info("  No games in last 24hrs")
                     continue
 
-                print(f"  {len(events)} game(s)")
+                logger.debug(f"  {len(events)} game(s)")
 
                 for event, matched_team in events:
                     game = self.parse_game(event, league)
@@ -172,7 +175,7 @@ class Scoreboard:
                     if game["state"] == "pre":
                         game = self.set_next_game_values(game)
                     all_games.append(game)
-                    print(
+                    logger.info(
                         f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]"
                     )
 
@@ -225,7 +228,7 @@ class Scoreboard:
 
                     last_game["next_opponent"] = opponent
                     last_game["next_game_time"] = next_time
-                    print(
+                    logger.info(
                         f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}"
                     )
 
@@ -260,9 +263,9 @@ class Scoreboard:
         self.save_cache(all_games)
 
         if errors:
-            print(f"\n{len(errors)} league(s) had errors:")
+            logger.error(f"\n{len(errors)} league(s) had errors:")
             for league, err in errors:
-                print(f"  • {league}\n    {err}")
+                logger.error(f"  • {league}\n    {err}")
 
 
 if __name__ == "__main__":

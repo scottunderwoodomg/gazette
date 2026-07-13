@@ -1,11 +1,13 @@
 import feedparser
 import calendar
+import logging
 import re
 from datetime import datetime, timezone
 import os
 
 from config.gazette_config import load_gazette_config
 gazette_config = load_gazette_config()
+logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────
@@ -47,7 +49,7 @@ class RssPuller():
 
     def pull_articles(self, feed_url, start_dt, end_dt):
         """Fetch a single feed and return matched (datetime, entry, feed_url) tuples."""
-        print(f"  Fetching: {feed_url}")
+        logger.debug(f"  Fetching: {feed_url}")
         feed = feedparser.parse(feed_url)
 
         if feed.bozo and not feed.entries:
@@ -61,7 +63,7 @@ class RssPuller():
             if start_dt <= pub_dt <= end_dt:
                 matched.append((pub_dt, entry, feed_url))
 
-        print(f"    → {len(matched)} article(s) matched")
+        logger.debug(f"    → {len(matched)} article(s) matched")
         return matched
 
 
@@ -140,13 +142,13 @@ class RssPuller():
 
     def main(self):
         if not self.rss_feeds:
-            print("ERROR: rss_feeds is empty. Add at least one feed URL.")
+            logger.error("ERROR: rss_feeds is empty. Add at least one feed URL.")
             return
 
         start_dt = self.parse_date(self.start_date)
         end_dt   = self.parse_date(self.end_date).replace(hour=23, minute=59, second=59)
 
-        print(f"Pulling {len(self.active_groups)} group(s) from {self.start_date} to {self.end_date}…\n")
+        logger.debug(f"Pulling {len(self.active_groups)} group(s) from {self.start_date} to {self.end_date}…\n")
 
         all_articles_by_group = {}
         feeds_by_group        = {}
@@ -157,13 +159,13 @@ class RssPuller():
             feeds_by_group[group_name]        = urls
             all_articles_by_group[group_name] = []
 
-            print(f"Group: {group_name} ({len(urls)} feed(s))")
+            logger.debug(f"Group: {group_name} ({len(urls)} feed(s))")
             for url in urls:
                 try:
                     matched = self.pull_articles(url, start_dt, end_dt)
                     all_articles_by_group[group_name].extend(matched)
                 except ValueError as e:
-                    print(f"  WARNING: Skipping feed — {e}")
+                    logger.warning(f"  WARNING: Skipping feed — {e}")
                     errors.append((url, str(e)))
 
             # Sort this group's articles chronologically
@@ -172,9 +174,9 @@ class RssPuller():
         output_path = self.write_output(all_articles_by_group, feeds_by_group, self.start_date, self.end_date)
 
         total = sum(len(a) for a in all_articles_by_group.values())
-        print(f"\nDone. {total} total article(s) written to: {output_path}")
+        logger.debug(f"\nDone. {total} total article(s) written to: {output_path}")
         if errors:
-            print(f"\n{len(errors)} feed(s) had errors:")
+            logger.error(f"\n{len(errors)} feed(s) had errors:")
             for url, err in errors:
-                print(f"  • {url}\n    {err}")
+                logger.error(f"  • {url}\n    {err}")
 
