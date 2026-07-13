@@ -16,6 +16,9 @@ class FeedSummarizer:
 
         self.ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
         self.MODEL = gazette_config["model"]
+
+        self.client = self.establish_client()
+
         self.INTERESTS = gazette_config["interests"]
 
         self.CACHE_DIR = gazette_config["cache_dir"]
@@ -38,6 +41,16 @@ class FeedSummarizer:
 
     def run_feed_summarizer(self):
         self.main()
+
+    def establish_client(self):
+        if not self.ANTHROPIC_API_KEY:
+            print(
+                "ERROR: No Anthropic API key found.\n"
+                "Get a key at: https://console.anthropic.com/settings/keys"
+            )
+            return
+
+        return anthropic.Anthropic(api_key=self.ANTHROPIC_API_KEY)
 
     def parse_groups_from_file(self, raw_text):
         """
@@ -89,10 +102,10 @@ class FeedSummarizer:
             }
         )
 
-    def filter_articles(self, raw_text, interests, client, model):
+    def filter_articles(self, raw_text, interests):
         print(f"  Filtering articles for interests: {interests}")
-        message = client.messages.create(
-            model=model,
+        message = self.client.messages.create(
+            model=self.MODEL,
             max_tokens=4096,
             messages=[
                 {
@@ -106,9 +119,9 @@ class FeedSummarizer:
             return None
         return result
 
-    def summarise_articles(self, filtered_text, interests, client, model):
-        message = client.messages.create(
-            model=model,
+    def summarise_articles(self, filtered_text, interests):
+        message = self.client.messages.create(
+            model=self.MODEL,
             max_tokens=2048,
             messages=[
                 {
@@ -132,14 +145,6 @@ class FeedSummarizer:
         print(f"  Summaries cached → {self.OUTPUT_FILE}")
 
     def main(self):
-        if not self.ANTHROPIC_API_KEY:
-            print(
-                "ERROR: No Anthropic API key found.\n"
-                "Get a key at: https://console.anthropic.com/settings/keys"
-            )
-            return
-
-        client = anthropic.Anthropic(api_key=self.ANTHROPIC_API_KEY)
 
         print(f"Reading articles from: {self.INPUT_FILE}")
         try:
@@ -169,7 +174,7 @@ class FeedSummarizer:
                         f"  Step 1/2 — Filtering by interests ({len(interests)} topic(s))…"
                     )
                     filtered_text = self.filter_articles(
-                        group_text, interests, client, self.MODEL
+                        group_text, interests, self.MODEL
                     )
                     if filtered_text is None:
                         print(
@@ -184,9 +189,7 @@ class FeedSummarizer:
 
                 step = "2/2" if interests else "1/1"
                 print(f"  Step {step} — Summarising…")
-                summary = self.summarise_articles(
-                    filtered_text, interests, client, self.MODEL
-                )
+                summary = self.summarise_articles(filtered_text, interests, self.MODEL)
                 summaries_by_group[group_name] = summary
 
         except anthropic.AuthenticationError:
