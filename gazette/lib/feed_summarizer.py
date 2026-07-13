@@ -16,13 +16,15 @@ class FeedSummarizer:
 
         self.ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
         self.MODEL = gazette_config["model"]
+
+        self.client = self.establish_client()
+
         self.INTERESTS = gazette_config["interests"]
 
-        self.CACHE_DIR = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
-        )
-        self.INPUT_FILE = os.path.join(self.CACHE_DIR, "latest_rss_output.txt")
-        self.OUTPUT_FILE = os.path.join(self.CACHE_DIR, "rss_summary.json")
+        self.CACHE_DIR = gazette_config["cache_dir"]
+
+        self.INPUT_FILE = gazette_config["latest_rss_results"]
+        self.OUTPUT_FILE = gazette_config["rss_summary_file"]
 
         all_groups = list(self.INTERESTS.keys())
         if groups:
@@ -39,6 +41,16 @@ class FeedSummarizer:
 
     def run_feed_summarizer(self):
         self.main()
+
+    def establish_client(self):
+        if not self.ANTHROPIC_API_KEY:
+            print(
+                "ERROR: No Anthropic API key found.\n"
+                "Get a key at: https://console.anthropic.com/settings/keys"
+            )
+            return
+
+        return anthropic.Anthropic(api_key=self.ANTHROPIC_API_KEY)
 
     def parse_groups_from_file(self, raw_text):
         """
@@ -58,11 +70,11 @@ class FeedSummarizer:
         return groups
 
     def read_articles(self, path):
-        """Read the rss_output.txt file and return its raw contents."""
+        """Read the promoted RSS output (latest_rss_results) and return its raw contents."""
         if not os.path.exists(path):
             raise FileNotFoundError(
                 f"Input file not found: {path}\n"
-                "Run rss_puller.py first to generate rss_output.txt."
+                "Run the puller + check_for_news promotion first."
             )
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
@@ -90,10 +102,10 @@ class FeedSummarizer:
             }
         )
 
-    def filter_articles(self, raw_text, interests, client, model):
+    def filter_articles(self, raw_text, interests):
         print(f"  Filtering articles for interests: {interests}")
-        message = client.messages.create(
-            model=model,
+        message = self.client.messages.create(
+            model=self.MODEL,
             max_tokens=4096,
             messages=[
                 {
@@ -107,9 +119,9 @@ class FeedSummarizer:
             return None
         return result
 
-    def summarise_articles(self, filtered_text, interests, client, model):
-        message = client.messages.create(
-            model=model,
+    def summarise_articles(self, filtered_text, interests):
+        message = self.client.messages.create(
+            model=self.MODEL,
             max_tokens=2048,
             messages=[
                 {
@@ -133,14 +145,6 @@ class FeedSummarizer:
         print(f"  Summaries cached → {self.OUTPUT_FILE}")
 
     def main(self):
-        if not self.ANTHROPIC_API_KEY:
-            print(
-                "ERROR: No Anthropic API key found.\n"
-                "Get a key at: https://console.anthropic.com/settings/keys"
-            )
-            return
-
-        client = anthropic.Anthropic(api_key=self.ANTHROPIC_API_KEY)
 
         print(f"Reading articles from: {self.INPUT_FILE}")
         try:
@@ -170,7 +174,7 @@ class FeedSummarizer:
                         f"  Step 1/2 — Filtering by interests ({len(interests)} topic(s))…"
                     )
                     filtered_text = self.filter_articles(
-                        group_text, interests, client, self.MODEL
+                        group_text, interests, self.MODEL
                     )
                     if filtered_text is None:
                         print(
@@ -185,9 +189,7 @@ class FeedSummarizer:
 
                 step = "2/2" if interests else "1/1"
                 print(f"  Step {step} — Summarising…")
-                summary = self.summarise_articles(
-                    filtered_text, interests, client, self.MODEL
-                )
+                summary = self.summarise_articles(filtered_text, interests, self.MODEL)
                 summaries_by_group[group_name] = summary
 
         except anthropic.AuthenticationError:
