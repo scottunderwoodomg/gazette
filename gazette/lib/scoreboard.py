@@ -4,12 +4,13 @@ import os
 from datetime import date, datetime, timezone, timedelta
 
 from config.gazette_config import load_gazette_config
+from zoneinfo import ZoneInfo
+
 gazette_config = load_gazette_config()
+EASTERN = ZoneInfo("America/New_York")
 
 
-
-
-class Scoreboard():
+class Scoreboard:
     def __init__(self):
         self.SCOREBOARD_CACHE_FILE = gazette_config["scoreboard_cache_file"]
         self.ENDPOINTS = gazette_config["score_endpoints"]
@@ -30,9 +31,9 @@ class Scoreboard():
         date_str = event.get("date")
         if not date_str:
             return False
-        game_time    = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        game_time = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         cutoff_front = datetime.now(timezone.utc) - timedelta(hours=24)
-        cutoff_back  = datetime.now(timezone.utc) + timedelta(hours=24)
+        cutoff_back = datetime.now(timezone.utc) + timedelta(hours=24)
         return cutoff_back > game_time >= cutoff_front
 
     def team_matches(self, event, filters):
@@ -41,13 +42,16 @@ class Scoreboard():
         return any(f in self.event_abbreviations(event) for f in filters)
 
     def isolate_opponent(self, game):
-        return next(t for t in [game["away_abbr"], game["home_abbr"]] if t != game["matched_team"])
-    
+        return next(
+            t
+            for t in [game["away_abbr"], game["home_abbr"]]
+            if t != game["matched_team"]
+        )
+
     def event_abbreviations(self, event):
         """Return the list of team abbreviations for both sides of an ESPN event."""
         competitors = event.get("competitions", [{}])[0].get("competitors", [])
         return [c.get("team", {}).get("abbreviation", "") for c in competitors]
-
 
     def set_next_game_values(self, game):
         game["next_game_time"] = game["kickoff"]
@@ -58,13 +62,13 @@ class Scoreboard():
 
     def parse_game(self, event, league):
         """Extract all fields needed by the email template from a raw ESPN event."""
-        competition  = event.get("competitions", [{}])[0]
-        competitors  = competition.get("competitors", [])
+        competition = event.get("competitions", [{}])[0]
+        competitors = competition.get("competitors", [])
 
         away = next((c for c in competitors if c.get("homeAway") == "away"), None)
         home = next((c for c in competitors if c.get("homeAway") == "home"), None)
 
-        state  = event.get("status", {}).get("type", {}).get("state", "pre")
+        state = event.get("status", {}).get("type", {}).get("state", "pre")
         detail = event.get("status", {}).get("type", {}).get("detail", "")
 
         # Game time (ISO, UTC) — used for sorting
@@ -74,25 +78,25 @@ class Scoreboard():
         kickoff_str = self.format_kickoff(game_time_iso)
 
         game = {
-            "league":       league,
-            "game_time_iso": game_time_iso,   # for sorting
-            "kickoff":      kickoff_str,       # for display
-            "state":        state,             # pre / in / post
-            "detail":       detail,            # "Final", "7:05 PM ET", "Q3 4:22", etc.
-            "away_abbr":    "",
-            "away_score":   "",
-            "home_abbr":    "",
-            "home_score":   "",
-            "next_opponent": "",               # populated below for filtered teams
+            "league": league,
+            "game_time_iso": game_time_iso,  # for sorting
+            "kickoff": kickoff_str,  # for display
+            "state": state,  # pre / in / post
+            "detail": detail,  # "Final", "7:05 PM ET", "Q3 4:22", etc.
+            "away_abbr": "",
+            "away_score": "",
+            "home_abbr": "",
+            "home_score": "",
+            "next_opponent": "",  # populated below for filtered teams
             "next_game_time": "",
-            "matched_team":   ""
+            "matched_team": "",
         }
 
         if away:
-            game["away_abbr"]  = away.get("team", {}).get("abbreviation", "?")
+            game["away_abbr"] = away.get("team", {}).get("abbreviation", "?")
             game["away_score"] = away.get("score", "-") if state != "pre" else ""
         if home:
-            game["home_abbr"]  = home.get("team", {}).get("abbreviation", "?")
+            game["home_abbr"] = home.get("team", {}).get("abbreviation", "?")
             game["home_score"] = home.get("score", "-") if state != "pre" else ""
 
         return game
@@ -102,17 +106,16 @@ class Scoreboard():
         if not game_time_iso:
             return ""
         gt = datetime.fromisoformat(game_time_iso.replace("Z", "+00:00"))
-        gt_local = gt - timedelta(hours=4)  # TODO(7b): hardcoded EDT offset
+        gt_local = gt.astimezone(EASTERN)
         kickoff_str = gt_local.strftime("%A %-I:%M%p").lower()
         return kickoff_str[0].upper() + kickoff_str[1:]
-
 
     # ── Cache ─────────────────────────────────────────────────────
 
     def save_cache(self, games):
         payload = {
             "generated": datetime.now(timezone.utc).isoformat(),
-            "games":     games,
+            "games": games,
         }
         with open(self.SCOREBOARD_CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
@@ -122,16 +125,18 @@ class Scoreboard():
 
     def main(self):
         all_games = []
-        errors    = []
-        date_offsets = [-1,0,1]
+        errors = []
+        date_offsets = [-1, 0, 1]
 
         for league, base_url in self.ENDPOINTS.items():
             for date_offset in date_offsets:
-                date_str = (date.today() + timedelta(days=date_offset)).strftime("%Y%m%d")
+                date_str = (date.today() + timedelta(days=date_offset)).strftime(
+                    "%Y%m%d"
+                )
                 url = f"{base_url}?dates={date_str}"
-                
+
                 try:
-                    data   = self.fetch(url)
+                    data = self.fetch(url)
                     events = data.get("events", [])
                 except Exception as e:
                     print(f"  ERROR fetching {league} {date_str}: {e}")
@@ -167,7 +172,9 @@ class Scoreboard():
                     if game["state"] == "pre":
                         game = self.set_next_game_values(game)
                     all_games.append(game)
-                    print(f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]")
+                    print(
+                        f"    {game['away_abbr']} {game['away_score']}  @  {game['home_abbr']} {game['home_score']}  [{game['detail']}]"
+                    )
 
         # ── Build a lookup of next-game info already fetched by the main loop ──
         # For each (league, team_abbr) that appears in an upcoming ("pre") game,
@@ -192,7 +199,8 @@ class Scoreboard():
                 for team_abbr in filters:
                     # Find the most recent completed/live game for this team in this league
                     team_games = [
-                        g for g in all_games
+                        g
+                        for g in all_games
                         if g["league"] == league
                         and g["state"] in ("post", "in")
                         and team_abbr in (g["away_abbr"], g["home_abbr"])
@@ -208,14 +216,18 @@ class Scoreboard():
                     # (covers today/tomorrow via date_offsets), instead of re-fetching.
                     upcoming_game = upcoming_by_team.get((league, team_abbr))
                     if upcoming_game:
-                        opponent  = self.isolate_opponent({**upcoming_game, "matched_team": team_abbr})
+                        opponent = self.isolate_opponent(
+                            {**upcoming_game, "matched_team": team_abbr}
+                        )
                         next_time = upcoming_game["kickoff"]
                     else:
                         opponent, next_time = "", ""
 
-                    last_game["next_opponent"]  = opponent
+                    last_game["next_opponent"] = opponent
                     last_game["next_game_time"] = next_time
-                    print(f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}")
+                    print(
+                        f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}"
+                    )
 
         # ── Remove pre-game cards for teams that already have a completed game ──
         covered_teams_by_league = {}
@@ -226,7 +238,8 @@ class Scoreboard():
                 covered_teams_by_league[g["league"]].add(g["home_abbr"])
 
         all_games = [
-            g for g in all_games
+            g
+            for g in all_games
             if not (
                 g["state"] == "pre"
                 and g["away_abbr"] in covered_teams_by_league.get(g["league"], set())
@@ -236,7 +249,11 @@ class Scoreboard():
 
         # ── Sort and save ──────────────────────────────────────────────
         def sort_key(g):
-            league_idx = self.LEAGUE_ORDER.index(g["league"]) if g["league"] in self.LEAGUE_ORDER else 999
+            league_idx = (
+                self.LEAGUE_ORDER.index(g["league"])
+                if g["league"] in self.LEAGUE_ORDER
+                else 999
+            )
             return (league_idx, g["game_time_iso"])
 
         all_games.sort(key=sort_key)
@@ -245,7 +262,7 @@ class Scoreboard():
         if errors:
             print(f"\n{len(errors)} league(s) had errors:")
             for league, err in errors:
-                print(f"  • {url}\n    {err}")
+                print(f"  • {league}\n    {err}")
 
 
 if __name__ == "__main__":
