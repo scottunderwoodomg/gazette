@@ -30,7 +30,7 @@ class GazetteEmail:
         self.SUMMARIES_FILE = gazette_config["rss_summary_file"]
         self.SCOREBOARD_FILE = gazette_config["scoreboard_cache_file"]
 
-        self.LOGO_B64 = self.encode_logo()
+        self.logo_bytes = self.load_logo()
 
     # ── Entry point ───────────────────────────────────────────────
 
@@ -39,37 +39,40 @@ class GazetteEmail:
 
     # ── Cache readers ─────────────────────────────────────────────
 
-    def read_summaries(self):
-        """Read rss_summary.json and return the summaries dict, or {} if missing."""
-        if not os.path.exists(self.SUMMARIES_FILE):
-            print("  No summaries cache found — email will contain scoreboard only.")
-            return {}
-        with open(self.SUMMARIES_FILE, "r", encoding="utf-8") as f:
+    def read_cache(self, path, payload_key, default, missing_msg, loaded_label):
+        """Read a JSON cache file and return payload[payload_key], or `default` if missing."""
+        if not os.path.exists(path):
+            print(f"  {missing_msg}")
+            return default
+        with open(path, "r", encoding="utf-8") as f:
             payload = json.load(f)
-        summaries = payload.get("summaries", {})
-        print(f"  Loaded {len(summaries)} group summary/summaries.")
-        return summaries
+        value = payload.get(payload_key, default)
+        print(f"  Loaded {len(value)} {loaded_label}.")
+        return value
+
+    def read_summaries(self):
+        return self.read_cache(
+            self.SUMMARIES_FILE, "summaries", {},
+            "No summaries cache found — email will contain scoreboard only.",
+            "group summary/summaries",
+        )
 
     def read_scoreboard(self):
-        """Read scoreboard_cache.json and return the games list, or [] if missing."""
-        if not os.path.exists(self.SCOREBOARD_FILE):
-            print("  No scoreboard cache found — email will contain summaries only.")
-            return []
-        with open(self.SCOREBOARD_FILE, "r", encoding="utf-8") as f:
-            payload = json.load(f)
-        games = payload.get("games", [])
-        print(f"  Loaded {len(games)} game(s) from scoreboard cache.")
-        return games
+        return self.read_cache(
+            self.SCOREBOARD_FILE, "games", [],
+            "No scoreboard cache found — email will contain summaries only.",
+            "game(s) from scoreboard cache",
+        )
 
     # ── Logo ──────────────────────────────────────────────────────
 
-    def encode_logo(self):
+    def load_logo(self):
         logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
-        print(f"[encode_logo] Looking at: {os.path.normpath(logo_path)}")
-        print(f"[encode_logo] Exists: {os.path.exists(logo_path)}")
+        print(f"[load_logo] Looking at: {os.path.normpath(logo_path)}")
+        print(f"[load_logo] Exists: {os.path.exists(logo_path)}")
         if os.path.exists(logo_path):
             with open(logo_path, "rb") as f:
-                return base64.b64encode(f.read()).decode("utf-8")
+                return f.read()
         return None
 
     # ── HTML builders ─────────────────────────────────────────────
@@ -121,8 +124,6 @@ class GazetteEmail:
 
         return sections_html
 
-    #<p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#bbbbbb;">Next</p>
-    #<p style="margin:2px 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:12px;color:#888888;line-height:1.5;">Next {g['matched_team']} vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
 
     def render_game_card(self, g):
         """Render a single game as an HTML table cell."""
@@ -176,14 +177,6 @@ class GazetteEmail:
             <p style="margin:0 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('detail', 'In Progress')}</p>
             {next_line}"""
 
-        #else:  # pre
-        #    score_block = f"""
-        #    <table cellpadding="0" cellspacing="0" style="width:100%;margin:6px 0 4px 0;">
-        #      <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['away_abbr']}</td></tr>
-        #      <tr><td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:400;color:#111111;padding:1px 0;">{g['home_abbr']}</td></tr>
-        #    </table>
-        #    <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('kickoff', g.get('detail', ''))}</p>
-        #    {next_line}"""
         else:  # pre
             score_block = f"""{next_line}"""
 
@@ -266,8 +259,8 @@ class GazetteEmail:
     ):
         sections_html = self.build_sections_html(summaries_by_group)
 
-        if self.LOGO_B64:
-            print(f"Logo loaded: {len(self.LOGO_B64)} chars")
+        if self.logo_bytes:
+            print(f"Logo loaded: {len(self.logo_bytes)} bytes")
             logo_html = """<img
                 src="cid:gazette_logo"
                 width="120"
@@ -300,9 +293,7 @@ class GazetteEmail:
 
     # ── Send ──────────────────────────────────────────────────────
 
-    def send_email(self, html):
-        date_str = datetime.now().strftime("%A, %B %-d, %Y")
-
+    def send_email(self, html, date_str):
         msg = MIMEMultipart("related")
         msg["Subject"] = f"Your Daily Gazette — {date_str}"
         msg["From"] = self.email_username
@@ -310,8 +301,8 @@ class GazetteEmail:
 
         msg.attach(MIMEText(html, "html"))
 
-        if self.LOGO_B64:
-            logo_img = MIMEImage(base64.b64decode(self.LOGO_B64))
+        if self.logo_bytes:
+            logo_img = MIMEImage(self.logo_bytes)
             logo_img.add_header("Content-ID", "<gazette_logo>")
             logo_img.add_header("Content-Disposition", "inline")
             msg.attach(logo_img)
@@ -343,5 +334,5 @@ class GazetteEmail:
             summaries_by_group, recipient_name, date_str, scoreboard_html
         )
 
-        self.send_email(html)
+        self.send_email(html, date_str)
         print("\nDone.")
