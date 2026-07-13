@@ -4,6 +4,8 @@ from datetime import date, timedelta
 _GAZETTE_ROOT = os.path.dirname(os.path.abspath(__file__)) # config/ dir
 _PROJECT_ROOT = os.path.dirname(_GAZETTE_ROOT) # gazette/ dir
 
+CACHE_DIR = os.path.normpath(os.path.join(_PROJECT_ROOT, "cache"))
+
 gazette_config_dev = {
     # ── Puller settings ───────────────────────────
     "active_topics": [],
@@ -33,9 +35,11 @@ gazette_config_dev = {
         "WC":   ["USA","ENG","FRA"],
     },
     # ── File paths ────────────────────────────────
-    "latest_output_file": os.path.join(_PROJECT_ROOT, "cache", "latest_rss_output.txt"), # the last file written by rss_puller.py
-    "output_file": os.path.join(_PROJECT_ROOT, "cache", "rss_output.txt"), # written by rss_puller.py
-    "summary_file": "rss_summary.txt",  # written by rss_summarizer.py
+    "cache_dir": CACHE_DIR,
+    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
+    "latest_rss_results": os.path.join(CACHE_DIR, "latest_rss_output.txt"), # the last file written by rss_puller.py
+    "rss_results": os.path.join(CACHE_DIR, "rss_output.txt"), # written by rss_puller.py
+    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
     "recipient_name": "Scott",
 }
@@ -129,9 +133,11 @@ gazette_config_prod = {
         "WC":   ["USA","ENG","FRA"],
     },
     # ── File paths ────────────────────────────────
-    "latest_output_file": os.path.join(_PROJECT_ROOT, "cache", "latest_rss_output.txt"), # the last file written by rss_puller.py
-    "output_file": os.path.join(_PROJECT_ROOT, "cache", "rss_output.txt"), # written by rss_puller.py
-    "summary_file": "rss_summary.txt",  # written by rss_summarizer.py
+    "cache_dir": CACHE_DIR,
+    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
+    "latest_rss_results": os.path.join(CACHE_DIR, "latest_rss_output.txt"), # the last file written by rss_puller.py
+    "rss_results": os.path.join(CACHE_DIR, "rss_output.txt"), # written by rss_puller.py
+    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
     "recipient_name": "Scott",
 }

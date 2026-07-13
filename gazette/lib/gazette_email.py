@@ -23,15 +23,12 @@ class GazetteEmail:
         self.email_password = os.environ["GMAIL_APP_PASSWORD"]
         self.email_target = os.environ["EMAIL_TARGET"]
 
-        self.CACHE_DIR = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
-        )
         self.IMAGE_DIR = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "..", "..", "images"
         )
 
-        self.SUMMARIES_FILE = os.path.join(self.CACHE_DIR, "rss_summary.json")
-        self.SCOREBOARD_FILE = os.path.join(self.CACHE_DIR, "scoreboard_cache.json")
+        self.SUMMARIES_FILE = gazette_config["rss_summary_file"]
+        self.SCOREBOARD_FILE = gazette_config["scoreboard_cache_file"]
 
         self.LOGO_B64 = self.encode_logo()
 

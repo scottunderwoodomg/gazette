@@ -29,8 +29,8 @@ class Gazette:
         self.emailer = GazetteEmail()
         self.walkpath = os.path.dirname(os.path.abspath(__file__))
 
-        self.latest_rss_pull_file = gazette_config["latest_output_file"]
-        self.rss_pull_file = gazette_config["output_file"]
+        self.latest_rss_pull_file = gazette_config["latest_rss_results"]
+        self.rss_pull_file = gazette_config["rss_results"]
 
     def publish_gazette(self):
         """Pulls new articles, summarises target topics, and distributes via email."""
@@ -62,31 +62,40 @@ class Gazette:
         match = re.search(r"^\[\d+\]", text, re.MULTILINE)
         return text[match.start() :].strip() if match else text.strip()
 
-    def check_for_news(self, file_a, file_b):
-        with open(file_a, "r", encoding="utf-8") as f:
-            content_a = f.read()
-            print(len(content_a))
-
-        if os.path.exists(file_b):
-            with open(file_b, "r", encoding="utf-8") as f:
-                content_b = f.read()
-                print(len(content_b))
-        else:
-            content_b = None
-
-        articles_a = self.isolate_articles(content_a)
-        articles_b = self.isolate_articles(content_b) if content_b else None
-
-        if os.environ.get("GAZETTE_ENV", "dev") == "dev":
-            return True
-        elif articles_a == articles_b:
-            print("Files are identical. No changes made.")
+    def check_for_news(self, fresh_file, latest_file):
+        if not os.path.exists(fresh_file):
+            print(f"  No fresh RSS output at '{fresh_file}' — skipping summariser.")
             return False
+
+        with open(fresh_file, "r", encoding="utf-8") as f:
+            fresh_content = f.read()
+
+        if os.path.exists(latest_file):
+            with open(latest_file, "r", encoding="utf-8") as f:
+                latest_content = f.read()
         else:
-            shutil.copy2(file_a, file_b)
-            os.remove(file_a)
-            print(f"Files differed. '{file_b}' updated and '{file_a}' deleted.")
-            return True
+            latest_content = None
+
+        fresh_articles  = self.isolate_articles(fresh_content)
+        latest_articles = self.isolate_articles(latest_content) if latest_content else None
+
+        is_dev  = os.environ.get("GAZETTE_ENV", "dev") == "dev"
+        changed = fresh_articles != latest_articles
+
+        # Prod + no change: nothing new to summarise.
+        if not changed and not is_dev:
+            print("No change in articles since last run — skipping summariser.")
+            return False
+
+        # Promote the fresh pull so the summariser reads current content.
+        shutil.copy2(fresh_file, latest_file)
+        os.remove(fresh_file)
+
+        if is_dev and not changed:
+            print("Dev mode: articles unchanged, summarising anyway.")
+        else:
+            print(f"Articles changed — '{latest_file}' updated from fresh pull.")
+        return True
 
 
 if __name__ == "__main__":

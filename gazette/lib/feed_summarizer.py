@@ -18,11 +18,10 @@ class FeedSummarizer:
         self.MODEL = gazette_config["model"]
         self.INTERESTS = gazette_config["interests"]
 
-        self.CACHE_DIR = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
-        )
-        self.INPUT_FILE = os.path.join(self.CACHE_DIR, "latest_rss_output.txt")
-        self.OUTPUT_FILE = os.path.join(self.CACHE_DIR, "rss_summary.json")
+        self.CACHE_DIR = gazette_config["cache_dir"]
+
+        self.INPUT_FILE = gazette_config["latest_rss_results"]
+        self.OUTPUT_FILE = gazette_config["rss_summary_file"]
 
         all_groups = list(self.INTERESTS.keys())
         if groups:
@@ -58,11 +57,11 @@ class FeedSummarizer:
         return groups
 
     def read_articles(self, path):
-        """Read the rss_output.txt file and return its raw contents."""
+        """Read the promoted RSS output (latest_rss_results) and return its raw contents."""
         if not os.path.exists(path):
             raise FileNotFoundError(
                 f"Input file not found: {path}\n"
-                "Run rss_puller.py first to generate rss_output.txt."
+                "Run the puller + check_for_news promotion first."
             )
         with open(path, "r", encoding="utf-8") as f:
             return f.read()

@@ -11,10 +11,7 @@ gazette_config = load_gazette_config()
 
 class Scoreboard():
     def __init__(self):
-        self.CACHE_DIR = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "cache"
-        )
-        self.cache_file  = os.path.join(self.CACHE_DIR, "scoreboard_cache.json")
+        self.SCOREBOARD_CACHE_FILE = gazette_config["scoreboard_cache_file"]
         self.ENDPOINTS = gazette_config["score_endpoints"]
         self.TEAM_FILTERS = gazette_config["team_filters"]
         self.LEAGUE_ORDER = list(self.ENDPOINTS.keys())
@@ -155,9 +152,9 @@ class Scoreboard():
             "generated": datetime.now(timezone.utc).isoformat(),
             "games":     games,
         }
-        with open(self.cache_file, "w", encoding="utf-8") as f:
+        with open(self.SCOREBOARD_CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
-        print(f"  Scoreboard cached → {self.cache_file}")
+        print(f"  Scoreboard cached → {self.SCOREBOARD_CACHE_FILE}")
 
     # ── Main ──────────────────────────────────────────────────────
 
