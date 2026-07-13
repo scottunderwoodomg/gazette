@@ -1,17 +1,21 @@
 import os
 from datetime import date, timedelta
 
-_GAZETTE_ROOT = os.path.dirname(os.path.abspath(__file__)) # config/ dir
-_PROJECT_ROOT = os.path.dirname(_GAZETTE_ROOT) # gazette/ dir
+_GAZETTE_ROOT = os.path.dirname(os.path.abspath(__file__))  # config/ dir
+_PROJECT_ROOT = os.path.dirname(_GAZETTE_ROOT)  # gazette/ dir
 
 CACHE_DIR = os.path.normpath(os.path.join(_PROJECT_ROOT, "cache"))
 
 gazette_config_dev = {
     # ── Puller settings ───────────────────────────
-    "active_topics": [],
-    #"active_topics": ["tech"],
-    "feeds": {
-        "tech": ["http://feeds2.feedburner.com/thenextweb"],
+    "topics": {
+        "tech": {
+            "is_active": False,
+            "interests": ["AI"],
+            "feeds": [
+                "http://feeds2.feedburner.com/thenextweb",
+            ],
+        }
     },
     "start_date": (date.today() - timedelta(days=1)).strftime(
         "%Y-%m-%d"
@@ -26,19 +30,23 @@ gazette_config_dev = {
     },
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
-        "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        #"WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
-        "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
+        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+        # "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
+        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
     },
     "team_filters": {
-        "MLB":  ["CLE"],
-        "WC":   ["USA","ENG","FRA"],
+        "MLB": ["CLE"],
+        "WC": ["USA", "ENG", "FRA"],
     },
     # ── File paths ────────────────────────────────
     "cache_dir": CACHE_DIR,
     "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(CACHE_DIR, "latest_rss_output.txt"), # the last file written by rss_puller.py
-    "rss_results": os.path.join(CACHE_DIR, "rss_output.txt"), # written by rss_puller.py
+    "latest_rss_results": os.path.join(
+        CACHE_DIR, "latest_rss_output.txt"
+    ),  # the last file written by rss_puller.py
+    "rss_results": os.path.join(
+        CACHE_DIR, "rss_output.txt"
+    ),  # written by rss_puller.py
     "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
     "recipient_name": "Scott",
@@ -46,37 +54,77 @@ gazette_config_dev = {
 
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
-    "active_topics": ["local_news", "tech", "gaming", "products", "sports"],
-    "feeds": {
-        "world_news": [
-            "https://reutersbest.com/feed/",
-            "	http://feeds.reuters.com/reuters/topNews",
-            "http://feeds.reuters.com/Reuters/worldNews",
-        ],
-        "local_news": [
-            "https://gothamist.com/feed",
-            "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
-            "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ctransit.landing.rss",
-            "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ceducation.landing.rss",
-            "http://www.ny1.com/services/contentfeed.nyc%7Cbrooklyn.hero.rss",
-            "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cweather%7Cweather-blogs.hero.rss"
-            "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-            "https://nypost.com/feed/",
-        ],
-        "tech": [
-            "www.404media.co/rss",
-            "https://feeds.arstechnica.com/arstechnica/index",
-            "https://blog.miguelgrinberg.com/feed",
-            "http://feeds2.feedburner.com/thenextweb",
-        ],
-        "gaming": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
-        "products": ["http://blog.feedbin.me/atom.xml"],
-        "sports": [
-            "https://www.nytimes.com/athletic/rss/news/",
-            # "https://www.hoopshype.com/",
-            "https://www.espn.com/espn/rss/nba/news",
-            "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
-        ],
+    "topics": {
+        "world_news": {
+            "is_active": False,
+            "interests": ["Top Stories"],
+            "feeds": [
+                "https://reutersbest.com/feed/",
+                "	http://feeds.reuters.com/reuters/topNews",
+                "http://feeds.reuters.com/Reuters/worldNews",
+            ],
+        },
+        "local_news": {
+            "is_active": True,
+            "interests": [
+                "transit",
+                "SoHo",
+                "Clinton Hill",
+                "Fort Green",
+                "Elementary School",
+                "Rain",
+                "Extreme Weather",
+            ],
+            "feeds": [
+                "https://gothamist.com/feed",
+                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
+                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ctransit.landing.rss",
+                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ceducation.landing.rss",
+                "http://www.ny1.com/services/contentfeed.nyc%7Cbrooklyn.hero.rss",
+                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cweather%7Cweather-blogs.hero.rss"
+                "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+                "https://nypost.com/feed/",
+            ],
+        },
+        "tech": {
+            "is_active": True,
+            "interests": [
+                "data engineering",
+                "apple",
+                "climate tech",
+                "healthcare",
+                "Arc Browser",
+                "raindrop.io",
+                "Express VPN",
+                "Carrot Weather",
+                "Notion",
+            ],
+            "feeds": [
+                "www.404media.co/rss",
+                "https://feeds.arstechnica.com/arstechnica/index",
+                "https://blog.miguelgrinberg.com/feed",
+                "http://feeds2.feedburner.com/thenextweb",
+            ],
+        },
+        "gaming": {
+            "is_active": True,
+            "interests": ["PlayStation Plus Monthly Games"],
+            "feeds": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
+        },
+        "products": {
+            "is_active": True,
+            "interests": [],
+            "feeds": ["http://blog.feedbin.me/atom.xml"],
+        },
+        "sports": {
+            "is_active": True,
+            "interests": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
+            "feeds": [
+                "https://www.nytimes.com/athletic/rss/news/",
+                "https://www.espn.com/espn/rss/nba/news",
+                "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
+            ],
+        },
     },
     "start_date": (date.today() - timedelta(days=1)).strftime(
         "%Y-%m-%d"
@@ -86,57 +134,32 @@ gazette_config_prod = {
     ),  # Defaults to today's date in YYYY-MM-DD format
     # ── Summarizer settings ───────────────────────
     "model": "claude-haiku-4-5-20251001",
-    # Interests filter: List any topics you care about. Only articles that are relevant to at least
-    #   one of these interests will be included in the digest. Set to an empty list [] to include
-    #   ALL articles regardless of topic.
-    "interests": {
-        "world_news": ["Top Stories"],
-        "local_news": [
-            "transit",
-            "SoHo",
-            "Clinton Hill",
-            "Fort Green",
-            "Elementary School",
-            "Rain",
-            "Extreme Weather",
-        ],
-        "tech": [
-            "data engineering",
-            "apple",
-            "climate tech",
-            "healthcare",
-            "Arc Browser",
-            "raindrop.io",
-            "Express VPN",
-            "Carrot Weather",
-            "Notion",
-        ],
-        "gaming": ["PlayStation Plus Monthly Games"],
-        "products": [],
-        "sports": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
-    },
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
-    "NBA":  "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
-    #"WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
-    #"NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-    #"CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
-    #"NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
-    "MLB":  "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-    #"MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-    #"EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-    "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
+        "NBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+        # "WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
+        # "NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+        # "CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
+        # "NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
+        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+        # "MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
+        # "EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
     },
     "team_filters": {
-        "NBA":  ["CLE"],
-        "MLB":  ["CLE"],
-        "WC":   ["USA","ENG","FRA"],
+        "NBA": ["CLE"],
+        "MLB": ["CLE"],
+        "WC": ["USA", "ENG", "FRA"],
     },
     # ── File paths ────────────────────────────────
     "cache_dir": CACHE_DIR,
     "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(CACHE_DIR, "latest_rss_output.txt"), # the last file written by rss_puller.py
-    "rss_results": os.path.join(CACHE_DIR, "rss_output.txt"), # written by rss_puller.py
+    "latest_rss_results": os.path.join(
+        CACHE_DIR, "latest_rss_output.txt"
+    ),  # the last file written by rss_puller.py
+    "rss_results": os.path.join(
+        CACHE_DIR, "rss_output.txt"
+    ),  # written by rss_puller.py
     "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
     "recipient_name": "Scott",
@@ -151,14 +174,12 @@ configs = {
 
 
 def filter_inactive_topics(config: dict) -> dict:
-    active_topics = config["active_topics"]
-    topic_keys = ["interests", "feeds"]
-    result = {}
-    for name, child in config.items():
-        if name in topic_keys:
-            result[name] = {k: v for k, v in child.items() if k in active_topics}
-        else:
-            result[name] = child
+    topics = config.get("topics", {})
+    active_topic_names = [name for name, t in topics.items() if t.get("is_active")]
+
+    result = dict(config)
+    result["feeds"] = {name: topics[name]["feeds"] for name in active_topic_names}
+    result["interests"] = {name: topics[name]["interests"] for name in active_topic_names}
     return result
 
 
