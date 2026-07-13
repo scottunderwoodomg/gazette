@@ -1,9 +1,13 @@
+import logging
 import re
 import os
 import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from config.logging_config import setup_logging
+setup_logging()
 
 from lib.feed_summarizer import FeedSummarizer
 from lib.gazette_email import GazetteEmail
@@ -13,6 +17,7 @@ from lib.scoreboard import Scoreboard
 from config.gazette_config import load_gazette_config
 
 gazette_config = load_gazette_config()
+logger = logging.getLogger(__name__)
 
 """
 Info goes here
@@ -40,7 +45,7 @@ class Gazette:
         if self.check_for_news(self.rss_pull_file, self.latest_rss_pull_file):
             self.summarizer.run_feed_summarizer()
         else:
-            print("Nothing new in the news — skipping summariser.")
+            logger.info("Nothing new in the news — skipping summariser.")
 
         self.emailer.run_gazette_email()
 
@@ -64,7 +69,7 @@ class Gazette:
 
     def check_for_news(self, fresh_file, latest_file):
         if not os.path.exists(fresh_file):
-            print(f"  No fresh RSS output at '{fresh_file}' — skipping summariser.")
+            logger.info(f"  No fresh RSS output at '{fresh_file}' — skipping summariser.")
             return False
 
         with open(fresh_file, "r", encoding="utf-8") as f:
@@ -84,7 +89,7 @@ class Gazette:
 
         # Prod + no change: nothing new to summarise.
         if not changed and not is_dev:
-            print("No change in articles since last run — skipping summariser.")
+            logger.info("No change in articles since last run — skipping summariser.")
             return False
 
         # Promote the fresh pull so the summariser reads current content.
@@ -92,9 +97,9 @@ class Gazette:
         os.remove(fresh_file)
 
         if is_dev and not changed:
-            print("Dev mode: articles unchanged, summarising anyway.")
+            logger.info("Dev mode: articles unchanged, summarising anyway.")
         else:
-            print(f"Articles changed — '{latest_file}' updated from fresh pull.")
+            logger.info(f"Articles changed — '{latest_file}' updated from fresh pull.")
         return True
 
 

@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import logging
 from datetime import datetime
 
 import anthropic
@@ -8,6 +9,7 @@ from config.gazette_config import load_gazette_config
 from config.prompt_config import live_prompts
 
 gazette_config = load_gazette_config()
+logger = logging.getLogger(__name__)
 
 
 class FeedSummarizer:
@@ -44,7 +46,7 @@ class FeedSummarizer:
 
     def establish_client(self):
         if not self.ANTHROPIC_API_KEY:
-            print(
+            logger.error(
                 "ERROR: No Anthropic API key found.\n"
                 "Get a key at: https://console.anthropic.com/settings/keys"
             )
@@ -64,7 +66,7 @@ class FeedSummarizer:
         for group_name, group_body in zip(it, it):
             group_body = group_body.strip()
             if not re.search(r"^\[\d+\]", group_body, re.MULTILINE):
-                print(f"  Skipping group '{group_name.strip()}' — no articles found.")
+                logger.debug(f"  Skipping group '{group_name.strip()}' — no articles found.")
                 continue
             groups[group_name.strip()] = group_body
         return groups
@@ -103,7 +105,7 @@ class FeedSummarizer:
         )
 
     def filter_articles(self, raw_text, interests):
-        print(f"  Filtering articles for interests: {interests}")
+        logger.debug(f"  Filtering articles for interests: {interests}")
         message = self.client.messages.create(
             model=self.MODEL,
             max_tokens=4096,
@@ -142,15 +144,15 @@ class FeedSummarizer:
         }
         with open(self.OUTPUT_FILE, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
-        print(f"  Summaries cached → {self.OUTPUT_FILE}")
+        logger.info(f"  Summaries cached → {self.OUTPUT_FILE}")
 
     def main(self):
 
-        print(f"Reading articles from: {self.INPUT_FILE}")
+        logger.debug(f"Reading articles from: {self.INPUT_FILE}")
         try:
             raw_text = self.read_articles(self.INPUT_FILE)
         except FileNotFoundError as e:
-            print(f"ERROR: {e}")
+            logger.error(f"ERROR: {e}")
             return
 
         groups_from_file = self.parse_groups_from_file(raw_text)
@@ -158,10 +160,10 @@ class FeedSummarizer:
 
         try:
             for i, group_name in enumerate(self.active_groups, 1):
-                print(f"\nGroup {i}/{len(self.active_groups)}: {group_name}")
+                logger.debug(f"\nGroup {i}/{len(self.active_groups)}: {group_name}")
 
                 if group_name not in groups_from_file:
-                    print(
+                    logger.warning(
                         f"  WARNING: Group '{group_name}' not found in input file, skipping."
                     )
                     continue
@@ -170,41 +172,41 @@ class FeedSummarizer:
                 interests = self.INTERESTS.get(group_name, [])
 
                 if interests:
-                    print(
+                    logger.debug(
                         f"  Step 1/2 — Filtering by interests ({len(interests)} topic(s))…"
                     )
                     filtered_text = self.filter_articles(
-                        group_text, interests, self.MODEL
+                        group_text, interests
                     )
                     if filtered_text is None:
-                        print(
+                        logger.debug(
                             f"  No articles matched interests for group '{group_name}', skipping."
                         )
                         continue
                 else:
-                    print(
+                    logger.debug(
                         f"  No interests defined — summarising all articles in group."
                     )
                     filtered_text = group_text
 
                 step = "2/2" if interests else "1/1"
-                print(f"  Step {step} — Summarising…")
-                summary = self.summarise_articles(filtered_text, interests, self.MODEL)
+                logger.debug(f"  Step {step} — Summarising…")
+                summary = self.summarise_articles(filtered_text, interests)
                 summaries_by_group[group_name] = summary
 
         except anthropic.AuthenticationError:
-            print(
+            logger.error(
                 "ERROR: API key rejected. Check your key at: https://console.anthropic.com/settings/keys"
             )
             return
         except anthropic.APIError as e:
-            print(f"ERROR: Anthropic API error — {e}")
+            logger.error(f"ERROR: Anthropic API error — {e}")
             return
 
         if summaries_by_group:
             self.save_summaries(summaries_by_group)
-            print(f"\nDone. {len(summaries_by_group)} group(s) summarised.")
+            logger.debug(f"\nDone. {len(summaries_by_group)} group(s) summarised.")
         else:
-            print(
+            logger.debug(
                 "\nNo summaries generated — no articles matched any group's interests."
             )

@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import smtplib
 from collections import OrderedDict
@@ -13,6 +14,7 @@ from config.email_content_config import email_content
 from config.gazette_config import load_gazette_config
 
 gazette_config = load_gazette_config()
+logger = logging.getLogger(__name__)
 
 
 class GazetteEmail:
@@ -42,12 +44,12 @@ class GazetteEmail:
     def read_cache(self, path, payload_key, default, missing_msg, loaded_label):
         """Read a JSON cache file and return payload[payload_key], or `default` if missing."""
         if not os.path.exists(path):
-            print(f"  {missing_msg}")
+            logger.debug(f"  {missing_msg}")
             return default
         with open(path, "r", encoding="utf-8") as f:
             payload = json.load(f)
         value = payload.get(payload_key, default)
-        print(f"  Loaded {len(value)} {loaded_label}.")
+        logger.debug(f"  Loaded {len(value)} {loaded_label}.")
         return value
 
     def read_summaries(self):
@@ -68,8 +70,8 @@ class GazetteEmail:
 
     def load_logo(self):
         logo_path = os.path.join(self.IMAGE_DIR, "gazette_logo.png")
-        print(f"[load_logo] Looking at: {os.path.normpath(logo_path)}")
-        print(f"[load_logo] Exists: {os.path.exists(logo_path)}")
+        logger.debug(f"[load_logo] Looking at: {os.path.normpath(logo_path)}")
+        logger.debug(f"[load_logo] Exists: {os.path.exists(logo_path)}")
         if os.path.exists(logo_path):
             with open(logo_path, "rb") as f:
                 return f.read()
@@ -260,7 +262,7 @@ class GazetteEmail:
         sections_html = self.build_sections_html(summaries_by_group)
 
         if self.logo_bytes:
-            print(f"Logo loaded: {len(self.logo_bytes)} bytes")
+            logger.debug(f"Logo loaded: {len(self.logo_bytes)} bytes")
             logo_html = """<img
                 src="cid:gazette_logo"
                 width="120"
@@ -269,7 +271,7 @@ class GazetteEmail:
                 style="display:block;width:120px;height:120px;object-fit:contain;filter:brightness(0)invert(1);"
             />"""
         else:
-            print("Logo NOT loaded — falling back to G div")
+            logger.debug("Logo NOT loaded — falling back to G div")
             logo_html = """<div style="
                 width:120px;height:120px;
                 background:#ffffff;
@@ -311,20 +313,20 @@ class GazetteEmail:
             server.login(self.email_username, self.email_password)
             server.send_message(msg)
 
-        print(f"Email sent to {self.email_target}")
+        logger.info(f"Email sent to {self.email_target}")
 
     # ── Main ──────────────────────────────────────────────────────
 
     def main(self):
-        print("Reading summaries cache…")
+        logger.debug("Reading summaries cache…")
         summaries_by_group = self.read_summaries()
 
-        print("Reading scoreboard cache…")
+        logger.debug("Reading scoreboard cache…")
         games = self.read_scoreboard()
         scoreboard_html = self.build_scoreboard_html(games)
 
         if not summaries_by_group and not scoreboard_html:
-            print("Nothing to send — no summaries and no scoreboard data.")
+            logger.debug("Nothing to send — no summaries and no scoreboard data.")
             return
 
         date_str = datetime.now().strftime("%A, %B %-d, %Y")
@@ -335,4 +337,4 @@ class GazetteEmail:
         )
 
         self.send_email(html, date_str)
-        print("\nDone.")
+        logger.debug("\nDone.")
