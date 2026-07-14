@@ -193,44 +193,44 @@ class Scoreboard:
                 if existing is None or g["game_time_iso"] < existing["game_time_iso"]:
                     upcoming_by_team[key] = g
 
-            # ── Attach next game info to the most recent post/in game per filtered team ──
-            for league, base_url in self.ENDPOINTS.items():
-                filters = self.TEAM_FILTERS.get(league, [])
-                if not filters:
+        # ── Attach next game info to the most recent post/in game per filtered team ──
+        for league, base_url in self.ENDPOINTS.items():
+            filters = self.TEAM_FILTERS.get(league, [])
+            if not filters:
+                continue
+
+            for team_abbr in filters:
+                # Find the most recent completed/live game for this team in this league
+                team_games = [
+                    g
+                    for g in all_games
+                    if g["league"] == league
+                    and g["state"] in ("post", "in")
+                    and team_abbr in (g["away_abbr"], g["home_abbr"])
+                ]
+                if not team_games:
                     continue
 
-                for team_abbr in filters:
-                    # Find the most recent completed/live game for this team in this league
-                    team_games = [
-                        g
-                        for g in all_games
-                        if g["league"] == league
-                        and g["state"] in ("post", "in")
-                        and team_abbr in (g["away_abbr"], g["home_abbr"])
-                    ]
-                    if not team_games:
-                        continue
+                # Sort by game time and take the most recent
+                team_games.sort(key=lambda g: g["game_time_iso"], reverse=True)
+                last_game = team_games[0]
 
-                    # Sort by game time and take the most recent
-                    team_games.sort(key=lambda g: g["game_time_iso"], reverse=True)
-                    last_game = team_games[0]
-
-                    # Reuse next-game info already fetched during the main loop
-                    # (covers today/tomorrow via date_offsets), instead of re-fetching.
-                    upcoming_game = upcoming_by_team.get((league, team_abbr))
-                    if upcoming_game:
-                        opponent = self.isolate_opponent(
-                            {**upcoming_game, "matched_team": team_abbr}
-                        )
-                        next_time = upcoming_game["kickoff"]
-                    else:
-                        opponent, next_time = "", ""
-
-                    last_game["next_opponent"] = opponent
-                    last_game["next_game_time"] = next_time
-                    logger.info(
-                        f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}"
+                # Reuse next-game info already fetched during the main loop
+                # (covers today/tomorrow via date_offsets), instead of re-fetching.
+                upcoming_game = upcoming_by_team.get((league, team_abbr))
+                if upcoming_game:
+                    opponent = self.isolate_opponent(
+                        {**upcoming_game, "matched_team": team_abbr}
                     )
+                    next_time = upcoming_game["kickoff"]
+                else:
+                    opponent, next_time = "", ""
+
+                last_game["next_opponent"] = opponent
+                last_game["next_game_time"] = next_time
+                logger.info(
+                    f"  Next game for {team_abbr} ({league}): vs {opponent} {next_time}"
+                )
 
         # ── Remove pre-game cards for teams that already have a completed game ──
         covered_teams_by_league = {}
