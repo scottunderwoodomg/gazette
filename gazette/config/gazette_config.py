@@ -144,7 +144,7 @@ gazette_config_prod = {
         "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
         # "MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
         # "EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
+        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
     },
     "team_filters": {
         "NBA": ["CLE"],
