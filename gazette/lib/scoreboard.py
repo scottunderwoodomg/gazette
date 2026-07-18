@@ -93,6 +93,7 @@ class Scoreboard:
             "next_opponent": "",  # populated below for filtered teams
             "next_game_time": "",
             "matched_team": "",
+            "recap_url": ""
         }
 
         if away:
@@ -101,6 +102,22 @@ class Scoreboard:
         if home:
             game["home_abbr"] = home.get("team", {}).get("abbreviation", "?")
             game["home_score"] = home.get("score", "-") if state != "pre" else ""
+
+        # Prefer recap link for post-game, fall back to gamecast, then any link
+        links = event.get("links", [])
+        recap_url = ""
+        for link in links:
+            rels = link.get("rel", [])
+            if "recap" in rels:
+                recap_url = link.get("href", "")
+                break
+        if not recap_url:
+            for link in links:
+                if "gamecast" in link.get("rel", []):
+                    recap_url = link.get("href", "")
+                    break
+
+        game["recap_url"] = recap_url
 
         return game
 

@@ -137,6 +137,15 @@ class GazetteEmail:
             next_line = f"""<hr style="border:none;border-top:1px solid #e0e0e0;margin:8px 0 6px 0;">
             <p style="margin:0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#bbbbbb;">Next {g['matched_team']} vs {g['next_opponent']}<br>{g['next_game_time']}</p>"""
 
+        
+        game_state_text = "Final" if state == "post" else g.get('detail', 'In Progress')
+        
+        game_state_link = (
+            f'<a href="{g["recap_url"]}" style="color:#888888;text-decoration:underline;">{game_state_text}</a>'
+            if g.get("recap_url")
+            else f"{game_state_text}"
+        )
+
         if state == "post":
             away_score = (
                 int(g["away_score"]) if str(g.get("away_score", "")).isdigit() else 0
@@ -161,7 +170,7 @@ class GazetteEmail:
                 <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;{home_bold}color:#111111;padding:1px 0;text-align:right;">{g['home_score']}</td>
               </tr>
             </table>
-            <p style="margin:0 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">Final</p>
+            <p style="margin:0 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{game_state_link}</p>
             {next_line}"""
 
         elif state == "in":
@@ -176,7 +185,7 @@ class GazetteEmail:
                 <td style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;font-weight:700;color:#111111;padding:1px 0;text-align:right;">{g['home_score']}</td>
               </tr>
             </table>
-            <p style="margin:0 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{g.get('detail', 'In Progress')}</p>
+            <p style="margin:0 0 0 0;font-family:'Trebuchet MS',Arial,sans-serif;font-size:11px;color:#888888;">{game_state_link}</p>
             {next_line}"""
 
         else:  # pre
