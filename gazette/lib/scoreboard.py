@@ -26,7 +26,12 @@ class Scoreboard:
     # ── Fetch ─────────────────────────────────────────────────────
 
     def fetch(self, url):
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        api_header = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Referer": "https://www.espn.com/",
+        }
+        req = urllib.request.Request(url, headers=api_header)
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode())
 
@@ -93,7 +98,7 @@ class Scoreboard:
             "next_opponent": "",  # populated below for filtered teams
             "next_game_time": "",
             "matched_team": "",
-            "recap_url": ""
+            "recap_url": "",
         }
 
         if away:
