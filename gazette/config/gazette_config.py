@@ -25,9 +25,10 @@ gazette_config_dev = {
     ),  # Defaults to today's date in YYYY-MM-DD format
     # ── Summarizer settings ───────────────────────
     "model": "claude-haiku-4-5-20251001",
-    "interests": {
-        "tech": ["AI"],
-    },
+    "thinking_status":"disabled",
+    "effort": "medium",
+    "filter_token_max": 4096,
+    "summary_token_max": 2042,
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
         "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
@@ -93,6 +94,8 @@ gazette_config_prod = {
                 "apple",
                 "climate tech",
                 "healthcare",
+                "privacy",
+                "security",
                 "Arc Browser",
                 "raindrop.io",
                 "Express VPN",
@@ -100,7 +103,7 @@ gazette_config_prod = {
                 "Notion",
             ],
             "feeds": [
-                "www.404media.co/rss",
+                "https://www.404media.co/rss",
                 "https://feeds.arstechnica.com/arstechnica/index",
                 "https://blog.miguelgrinberg.com/feed",
                 "http://feeds2.feedburner.com/thenextweb",
@@ -118,10 +121,11 @@ gazette_config_prod = {
         },
         "sports": {
             "is_active": True,
-            "interests": ["Cleveland Cavaliers", "Lebron James", "NBA", "World Cup"],
+            "interests": ["Cleveland Cavaliers","Cleveland Guardians", "Lebron James", "NBA", "World Cup"],
             "feeds": [
                 "https://www.nytimes.com/athletic/rss/news/",
                 "https://www.espn.com/espn/rss/nba/news",
+                "https://www.espn.com/espn/rss/mlb/news",
                 "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
             ],
         },
@@ -133,7 +137,12 @@ gazette_config_prod = {
         "%Y-%m-%d"
     ),  # Defaults to today's date in YYYY-MM-DD format
     # ── Summarizer settings ───────────────────────
-    "model": "claude-haiku-4-5-20251001",
+    #"model": "claude-haiku-4-5-20251001",
+    "model": "claude-sonnet-5",
+    "thinking_status":"disabled",
+    "effort": "medium",
+    "filter_token_max": 4096,
+    "summary_token_max": 2042,
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
         "NBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
