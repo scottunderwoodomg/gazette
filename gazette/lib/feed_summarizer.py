@@ -108,7 +108,9 @@ class FeedSummarizer:
         logger.debug(f"  Filtering articles for interests: {interests}")
         message = self.client.messages.create(
             model=self.MODEL,
-            max_tokens=4096,
+            max_tokens=gazette_config["filter_token_max"],
+            thinking={"type": gazette_config["thinking_status"]},
+            output_config={"effort": gazette_config["effort"]},
             messages=[
                 {
                     "role": "user",
@@ -124,7 +126,9 @@ class FeedSummarizer:
     def summarise_articles(self, filtered_text, interests):
         message = self.client.messages.create(
             model=self.MODEL,
-            max_tokens=2048,
+            max_tokens=gazette_config["summary_token_max"],
+            thinking={"type": gazette_config["thinking_status"]},
+            output_config={"effort": gazette_config["effort"]},
             messages=[
                 {
                     "role": "user",
@@ -132,7 +136,8 @@ class FeedSummarizer:
                 }
             ],
         )
-        return message.content[0].text
+        text_blocks = [b.text for b in message.content if b.type == "text"]
+        return "".join(text_blocks)
 
     def save_summaries(self, summaries_by_group):
         """Save summaries to a JSON cache file for the email script to consume."""
