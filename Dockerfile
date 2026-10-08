@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Install deps first so this layer is cached when only code changes
-COPY requirements.txt .
+COPY gazette/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
