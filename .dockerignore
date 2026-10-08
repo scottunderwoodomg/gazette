@@ -1,0 +1,10 @@
+.git
+.github
+venv
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+gazette/cache
+gazette/config/gazette_config_actual.py

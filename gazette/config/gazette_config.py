@@ -50,85 +50,19 @@ gazette_config_dev = {
     ),  # written by rss_puller.py
     "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
-    "recipient_name": "Scott",
+    "recipient_name": "Friend",
 }
 
 gazette_config_prod = {
     # ── Puller settings ───────────────────────────
     "topics": {
-        "world_news": {
-            "is_active": False,
-            "interests": ["Top Stories"],
-            "feeds": [
-                "https://reutersbest.com/feed/",
-                "	http://feeds.reuters.com/reuters/topNews",
-                "http://feeds.reuters.com/Reuters/worldNews",
-            ],
-        },
-        "local_news": {
-            "is_active": True,
-            "interests": [
-                "transit",
-                "SoHo",
-                "Clinton Hill",
-                "Fort Green",
-                "Elementary School",
-                "Rain",
-                "Extreme Weather",
-            ],
-            "feeds": [
-                "https://gothamist.com/feed",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ctransit.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ceducation.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Cbrooklyn.hero.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cweather%7Cweather-blogs.hero.rss"
-                "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-                "https://nypost.com/feed/",
-            ],
-        },
         "tech": {
             "is_active": True,
-            "interests": [
-                "data engineering",
-                "apple",
-                "climate tech",
-                "healthcare",
-                "privacy",
-                "security",
-                "Arc Browser",
-                "raindrop.io",
-                "Express VPN",
-                "Carrot Weather",
-                "Notion",
-            ],
+            "interests": ["AI"],
             "feeds": [
-                "https://www.404media.co/rss",
-                "https://feeds.arstechnica.com/arstechnica/index",
-                "https://blog.miguelgrinberg.com/feed",
                 "http://feeds2.feedburner.com/thenextweb",
             ],
-        },
-        "gaming": {
-            "is_active": True,
-            "interests": ["PlayStation Plus Monthly Games"],
-            "feeds": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
-        },
-        "products": {
-            "is_active": True,
-            "interests": [],
-            "feeds": ["http://blog.feedbin.me/atom.xml"],
-        },
-        "sports": {
-            "is_active": True,
-            "interests": ["Cleveland Cavaliers","Cleveland Guardians", "Lebron James", "NBA", "World Cup"],
-            "feeds": [
-                "https://www.nytimes.com/athletic/rss/news/",
-                "https://www.espn.com/espn/rss/nba/news",
-                "https://www.espn.com/espn/rss/mlb/news",
-                "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
-            ],
-        },
+        }
     },
     "start_date": (date.today() - timedelta(days=1)).strftime(
         "%Y-%m-%d"
@@ -137,26 +71,18 @@ gazette_config_prod = {
         "%Y-%m-%d"
     ),  # Defaults to today's date in YYYY-MM-DD format
     # ── Summarizer settings ───────────────────────
-    #"model": "claude-haiku-4-5-20251001",
-    "model": "claude-sonnet-5",
+    "model": "claude-haiku-4-5-20251001",
     "thinking_status":"disabled",
     "effort": "medium",
     "filter_token_max": 4096,
     "summary_token_max": 2042,
     # ── Scoreboard Config ────────────────────────────────
     "score_endpoints": {
-        "NBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
-        # "WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
-        # "NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-        # "CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
-        # "NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
         "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        # "MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-        # "EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
+        # "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
         "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
     },
     "team_filters": {
-        "NBA": ["CLE"],
         "MLB": ["CLE"],
         "WC": ["USA", "ENG", "FRA"],
     },
@@ -171,7 +97,7 @@ gazette_config_prod = {
     ),  # written by rss_puller.py
     "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
     # ── File paths ────────────────────────────────
-    "recipient_name": "Scott",
+    "recipient_name": "Friend",
 }
 
 
