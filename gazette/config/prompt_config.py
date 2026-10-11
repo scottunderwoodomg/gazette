@@ -1,7 +1,7 @@
 live_prompts = {
     "filter": """
         You are a content filter. Below is a list of news articles, each separated by a blank line and starting with a numbered heading like [1], [2], etc.
-
+        
         I am only interested in articles related to ANY of these topics:
         {interests_list}
 

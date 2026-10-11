@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import date, timedelta
 
@@ -6,180 +7,45 @@ _PROJECT_ROOT = os.path.dirname(_GAZETTE_ROOT)  # gazette/ dir
 
 CACHE_DIR = os.path.normpath(os.path.join(_PROJECT_ROOT, "cache"))
 
-gazette_config_dev = {
-    # ── Puller settings ───────────────────────────
-    "topics": {
-        "tech": {
-            "is_active": False,
-            "interests": ["AI"],
-            "feeds": [
-                "http://feeds2.feedburner.com/thenextweb",
-            ],
-        }
-    },
-    "start_date": (date.today() - timedelta(days=1)).strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to yesterday's date in YYYY-MM-DD format
-    "end_date": date.today().strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to today's date in YYYY-MM-DD format
-    # ── Summarizer settings ───────────────────────
-    "model": "claude-haiku-4-5-20251001",
-    "thinking_status":"disabled",
-    "effort": "medium",
-    "filter_token_max": 4096,
-    "summary_token_max": 2042,
-    # ── Scoreboard Config ────────────────────────────────
-    "score_endpoints": {
-        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        # "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
-        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
-    },
-    "team_filters": {
-        "MLB": ["CLE"],
-        "WC": ["USA", "ENG", "FRA"],
-    },
-    # ── File paths ────────────────────────────────
-    "cache_dir": CACHE_DIR,
-    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(
-        CACHE_DIR, "latest_rss_output.txt"
-    ),  # the last file written by rss_puller.py
-    "rss_results": os.path.join(
-        CACHE_DIR, "rss_output.txt"
-    ),  # written by rss_puller.py
-    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
-    # ── File paths ────────────────────────────────
-    "recipient_name": "Scott",
-}
 
-gazette_config_prod = {
-    # ── Puller settings ───────────────────────────
-    "topics": {
-        "world_news": {
-            "is_active": False,
-            "interests": ["Top Stories"],
-            "feeds": [
-                "https://reutersbest.com/feed/",
-                "	http://feeds.reuters.com/reuters/topNews",
-                "http://feeds.reuters.com/Reuters/worldNews",
-            ],
-        },
-        "local_news": {
-            "is_active": True,
-            "interests": [
-                "transit",
-                "SoHo",
-                "Clinton Hill",
-                "Fort Green",
-                "Elementary School",
-                "Rain",
-                "Extreme Weather",
-            ],
-            "feeds": [
-                "https://gothamist.com/feed",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ctransit.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cnews%7Ceducation.landing.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Cbrooklyn.hero.rss",
-                "http://www.ny1.com/services/contentfeed.nyc%7Call-boroughs%7Cweather%7Cweather-blogs.hero.rss"
-                "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-                "https://nypost.com/feed/",
-            ],
-        },
-        "tech": {
-            "is_active": True,
-            "interests": [
-                "data engineering",
-                "apple",
-                "climate tech",
-                "healthcare",
-                "privacy",
-                "security",
-                "Arc Browser",
-                "raindrop.io",
-                "Express VPN",
-                "Carrot Weather",
-                "Notion",
-            ],
-            "feeds": [
-                "https://www.404media.co/rss",
-                "https://feeds.arstechnica.com/arstechnica/index",
-                "https://blog.miguelgrinberg.com/feed",
-                "http://feeds2.feedburner.com/thenextweb",
-            ],
-        },
-        "gaming": {
-            "is_active": True,
-            "interests": ["PlayStation Plus Monthly Games"],
-            "feeds": ["http://blog.us.playstation.com/tag/playstation-plus/feed/"],
-        },
-        "products": {
-            "is_active": True,
-            "interests": [],
-            "feeds": ["http://blog.feedbin.me/atom.xml"],
-        },
-        "sports": {
-            "is_active": True,
-            "interests": ["Cleveland Cavaliers","Cleveland Guardians", "Lebron James", "NBA", "World Cup"],
-            "feeds": [
-                "https://www.nytimes.com/athletic/rss/news/",
-                "https://www.espn.com/espn/rss/nba/news",
-                "https://www.espn.com/espn/rss/mlb/news",
-                "https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=fs/nba",
-            ],
-        },
-    },
-    "start_date": (date.today() - timedelta(days=1)).strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to yesterday's date in YYYY-MM-DD format
-    "end_date": date.today().strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to today's date in YYYY-MM-DD format
-    # ── Summarizer settings ───────────────────────
-    #"model": "claude-haiku-4-5-20251001",
-    "model": "claude-sonnet-5",
-    "thinking_status":"disabled",
-    "effort": "medium",
-    "filter_token_max": 4096,
-    "summary_token_max": 2042,
-    # ── Scoreboard Config ────────────────────────────────
-    "score_endpoints": {
-        "NBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
-        # "WNBA": "http://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
-        # "NFL":  "http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
-        # "CFB":  "http://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
-        # "NHL":  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
-        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        # "MLS":  "http://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
-        # "EPL":  "http://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard",
-        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
-    },
-    "team_filters": {
-        "NBA": ["CLE"],
-        "MLB": ["CLE"],
-        "WC": ["USA", "ENG", "FRA"],
-    },
-    # ── File paths ────────────────────────────────
-    "cache_dir": CACHE_DIR,
-    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(
-        CACHE_DIR, "latest_rss_output.txt"
-    ),  # the last file written by rss_puller.py
-    "rss_results": os.path.join(
-        CACHE_DIR, "rss_output.txt"
-    ),  # written by rss_puller.py
-    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
-    # ── File paths ────────────────────────────────
-    "recipient_name": "Scott",
-}
+# ──Core settings ──────────────────────────────────────────────────
+def _core_settings() -> dict:
+    return {
+        "start_date": (date.today() - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "end_date": date.today().strftime("%Y-%m-%d"),
+        "cache_dir": CACHE_DIR,
+        "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
+        "latest_rss_results": os.path.join(
+            CACHE_DIR, "latest_rss_output.txt"
+        ),  # the last file written by rss_puller.py
+        "rss_results": os.path.join(
+            CACHE_DIR, "rss_output.txt"
+        ),  # written by rss_puller.py
+        "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
+    }
 
 
-# Registry — used by the loader below
+# Registry — GAZETTE_ENV value -> env var holding that environment's JSON config
 configs = {
-    "dev": gazette_config_dev,
-    "prod": gazette_config_prod,
+    "dev": "GAZETTE_CONFIG_DEV",
+    "prod": "GAZETTE_CONFIG_PROD",
 }
+
+
+def _load_env_config(var_name: str) -> dict:
+    raw = os.environ.get(var_name)
+    if not raw:
+        raise RuntimeError(
+            f"Environment variable {var_name} is not set. "
+            "It must contain this environment's config as a JSON object."
+        )
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{var_name} is not valid JSON: {e}") from e
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{var_name} must be a JSON object, got {type(parsed).__name__}")
+    return parsed
 
 
 def filter_inactive_topics(config: dict) -> dict:
@@ -200,5 +66,8 @@ def load_gazette_config():
         )
     print(f"[gazette] Loading config: {env}")
 
-    active_topic_config = filter_inactive_topics(configs[env])
+    # JSON from the env var first, then Python-only values on top
+    full_config = {**_load_env_config(configs[env]), **_core_settings()}
+
+    active_topic_config = filter_inactive_topics(full_config)
     return active_topic_config

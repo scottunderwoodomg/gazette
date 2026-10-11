@@ -2,9 +2,9 @@ import logging
 import re
 import os
 import shutil
-from dotenv import load_dotenv
 
-load_dotenv()
+from utils.env_loader import load_env_json
+load_env_json()
 
 from config.logging_config import setup_logging
 setup_logging()

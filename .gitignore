@@ -156,6 +156,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+env.json
 
 # Spyder project settings
 .spyderproject
@@ -218,6 +219,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 /gazette/cache
-/gazette/utils
+/gazette/utils_dev
 
 .DS_Store
