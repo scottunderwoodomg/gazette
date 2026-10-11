@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import date, timedelta
 
@@ -6,106 +7,45 @@ _PROJECT_ROOT = os.path.dirname(_GAZETTE_ROOT)  # gazette/ dir
 
 CACHE_DIR = os.path.normpath(os.path.join(_PROJECT_ROOT, "cache"))
 
-gazette_config_dev = {
-    # ── Puller settings ───────────────────────────
-    "topics": {
-        "tech": {
-            "is_active": False,
-            "interests": ["AI"],
-            "feeds": [
-                "http://feeds2.feedburner.com/thenextweb",
-            ],
-        }
-    },
-    "start_date": (date.today() - timedelta(days=1)).strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to yesterday's date in YYYY-MM-DD format
-    "end_date": date.today().strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to today's date in YYYY-MM-DD format
-    # ── Summarizer settings ───────────────────────
-    "model": "claude-haiku-4-5-20251001",
-    "thinking_status":"disabled",
-    "effort": "medium",
-    "filter_token_max": 4096,
-    "summary_token_max": 2042,
-    # ── Scoreboard Config ────────────────────────────────
-    "score_endpoints": {
-        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        # "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
-        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
-    },
-    "team_filters": {
-        "MLB": ["CLE"],
-        "WC": ["USA", "ENG", "FRA"],
-    },
-    # ── File paths ────────────────────────────────
-    "cache_dir": CACHE_DIR,
-    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(
-        CACHE_DIR, "latest_rss_output.txt"
-    ),  # the last file written by rss_puller.py
-    "rss_results": os.path.join(
-        CACHE_DIR, "rss_output.txt"
-    ),  # written by rss_puller.py
-    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
-    # ── File paths ────────────────────────────────
-    "recipient_name": "Friend",
-}
 
-gazette_config_prod = {
-    # ── Puller settings ───────────────────────────
-    "topics": {
-        "tech": {
-            "is_active": True,
-            "interests": ["AI"],
-            "feeds": [
-                "http://feeds2.feedburner.com/thenextweb",
-            ],
-        }
-    },
-    "start_date": (date.today() - timedelta(days=1)).strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to yesterday's date in YYYY-MM-DD format
-    "end_date": date.today().strftime(
-        "%Y-%m-%d"
-    ),  # Defaults to today's date in YYYY-MM-DD format
-    # ── Summarizer settings ───────────────────────
-    "model": "claude-haiku-4-5-20251001",
-    "thinking_status":"disabled",
-    "effort": "medium",
-    "filter_token_max": 4096,
-    "summary_token_max": 2042,
-    # ── Scoreboard Config ────────────────────────────────
-    "score_endpoints": {
-        "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
-        # "WC":   "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719",
-        "WC": "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
-    },
-    "team_filters": {
-        "MLB": ["CLE"],
-        "WC": ["USA", "ENG", "FRA"],
-    },
-    # ── File paths ────────────────────────────────
-    "cache_dir": CACHE_DIR,
-    "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
-    "latest_rss_results": os.path.join(
-        CACHE_DIR, "latest_rss_output.txt"
-    ),  # the last file written by rss_puller.py
-    "rss_results": os.path.join(
-        CACHE_DIR, "rss_output.txt"
-    ),  # written by rss_puller.py
-    "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
-    # ── File paths ────────────────────────────────
-    "recipient_name": "Friend",
-}
+# ──Core settings ──────────────────────────────────────────────────
+def _core_settings() -> dict:
+    return {
+        "start_date": (date.today() - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "end_date": date.today().strftime("%Y-%m-%d"),
+        "cache_dir": CACHE_DIR,
+        "scoreboard_cache_file": os.path.join(CACHE_DIR, "scoreboard_cache.json"),
+        "latest_rss_results": os.path.join(
+            CACHE_DIR, "latest_rss_output.txt"
+        ),  # the last file written by rss_puller.py
+        "rss_results": os.path.join(
+            CACHE_DIR, "rss_output.txt"
+        ),  # written by rss_puller.py
+        "rss_summary_file": os.path.join(CACHE_DIR, "rss_summary.json"),
+    }
 
 
-# Registry — used by the loader below
+# Registry — GAZETTE_ENV value -> env var holding that environment's JSON config
 configs = {
-    "dev": gazette_config_dev,
-    "prod": gazette_config_prod,
+    "dev": "GAZETTE_CONFIG_DEV",
+    "prod": "GAZETTE_CONFIG_PROD",
 }
+
+
+def _load_env_config(var_name: str) -> dict:
+    raw = os.environ.get(var_name)
+    if not raw:
+        raise RuntimeError(
+            f"Environment variable {var_name} is not set. "
+            "It must contain this environment's config as a JSON object."
+        )
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{var_name} is not valid JSON: {e}") from e
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{var_name} must be a JSON object, got {type(parsed).__name__}")
+    return parsed
 
 
 def filter_inactive_topics(config: dict) -> dict:
@@ -126,5 +66,8 @@ def load_gazette_config():
         )
     print(f"[gazette] Loading config: {env}")
 
-    active_topic_config = filter_inactive_topics(configs[env])
+    # JSON from the env var first, then Python-only values on top
+    full_config = {**_load_env_config(configs[env]), **_core_settings()}
+
+    active_topic_config = filter_inactive_topics(full_config)
     return active_topic_config

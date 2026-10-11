@@ -6,5 +6,6 @@ __pycache__
 *.pyc
 .env
 .env.*
+env.json
 gazette/cache
 gazette/config/gazette_config_actual.py
