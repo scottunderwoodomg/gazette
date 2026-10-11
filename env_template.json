@@ -1,0 +1,37 @@
+{
+    "GAZETTE_ENV": "dev",
+    "ANTHROPIC_API_KEY": "",
+    "EMAIL_TARGET": "person@mail.com",
+    "EMAIL_USERNAME": "person@mail.com",
+    "GMAIL_APP_PASSWORD": "",
+    "FEEDBIN_USER_EMAIL": "person@mail.com",
+    "FEEDBIN_USER_PW": "",
+    "GAZETTE_CONFIG_DEV": {
+        "topics": {
+            "tech": {
+                "is_active": false,
+                "interests": [
+                    "AI"
+                ],
+                "feeds": [
+                    "http://feeds2.feedburner.com/thenextweb"
+                ]
+            }
+        },
+        "model": "claude-haiku-4-5-20251001",
+        "thinking_status": "disabled",
+        "effort": "medium",
+        "filter_token_max": 4096,
+        "summary_token_max": 2042,
+        "score_endpoints": {
+            "MLB": "http://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"
+        },
+        "team_filters": {
+            "MLB": [
+                "CLE"
+            ]
+        },
+        "recipient_name": "You"
+    },
+    "GAZETTE_CONFIG_PROD": {}
+}
