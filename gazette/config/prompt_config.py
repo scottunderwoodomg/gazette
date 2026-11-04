@@ -44,9 +44,9 @@ live_prompts = {
         {interest_note}
         Your task:
         1. Identify the major themes or topics across all the articles.
-        2. If there are more than 3 major themes or topics related to a given interst use your best judgement to only return 3 themes.
+        2. If there are more than 3 major themes or topics related to a given interst, use your best judgement to only return 3 themes. If there are 4 themes that match strongly to my interests then I tould prefer 4 distinct themes over trying to force two themes into one.
         3. For each theme, write a concise 1–2 sentence description.
-        4. Under each theme, produce a concise summary of all the articles relaated to the theme. Favor the existing information and only adjust the summary if sumbsequent articles on the same topic add to it in a meaningful way.  Below the summary, include a row of text links to the articles in question in the following format:
+        4. Under each theme, produce a concise summary of all the articles relaated to the theme. Favor the existing information and only adjust the summary if sumbsequent articles on the same topic add to it in a meaningful way. No topics should be so broad that they draw from more than 2-3 articles unless there is a very strong match across them about a single news story. Below the summary, include a row of text links to the articles in question in the following format:
         - Sources: [<name of website from url>](URL), [<name of website from url>](URL)...
 
         Rules:
@@ -68,14 +68,18 @@ live_prompts = {
         {interest_note}
         Your task:
         1. Identify the major themes or topics across all the articles.
-        2. For each theme, write a concise 1–2 sentence description.
-        3. Under each theme, list the most relevant articles as bullet points using this exact format:
-        - [Article Title](URL) — one-sentence relevance note
+        2. If there are more than 3 major themes or topics related to a given interst use your best judgement to only return 3 themes.
+        3. For each theme, write a concise 1–2 sentence description.
+        4. Under each theme, produce a concise summary of all the articles relaated to the theme. Favor the existing information and only adjust the summary if sumbsequent articles on the same topic add to it in a meaningful way. Below the summary, include a row of text links to the articles in question in the following format:
+        - Sources: [<name of website from url>](URL), [<name of website from url>](URL)...
 
         Rules:
+        - Do NOT include a generic top-level heading like "Major Themes" or any document or section title.
+        - Begin directly with the first ## theme heading.
         - Keep the overall output tight and scannable.
-        - Every article bullet must include the hyperlink in Markdown format.
-        - If an article fits multiple themes, you may list it under more than one.
+        - Summary should target a 100-120 word limit.
+        - There should be no more than 3 topics summarized under each group.
+        - If an article fits multiple themes, you may use it as a source for more than one theme/topic summary.
         - Do not invent information; only use what is in the articles provided.
         - Use plain Markdown (headers with ##, bullet points with -).
 
