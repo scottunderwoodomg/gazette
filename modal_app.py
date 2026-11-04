@@ -21,7 +21,7 @@ CACHE_DIR = "/root/gazette/cache"
 
 @app.function(
     image=image,
-    schedule=modal.Cron("0 7 * * *", timezone="America/New_York"),
+    schedule=modal.Cron("0 6 * * *", timezone="America/New_York"),
     secrets=[modal.Secret.from_name("gazette")],
     volumes={CACHE_DIR: cache},   # volume appears exactly where the app expects it
     timeout=30 * 60,
