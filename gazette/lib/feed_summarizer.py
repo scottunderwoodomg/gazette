@@ -104,6 +104,16 @@ class FeedSummarizer:
             }
         )
 
+    def extract_text(self, message):
+        """Return the joined text blocks from a Claude response, skipping thinking blocks."""
+        parts = [b.text for b in message.content if b.type == "text"]
+        if not parts:
+            raise RuntimeError(
+                f"No text in Claude response (stop_reason={message.stop_reason}); "
+                "if stop_reason is 'max_tokens', raise max_tokens to leave room after thinking."
+            )
+        return "".join(parts).strip()
+
     def filter_articles(self, raw_text, interests):
         logger.debug(f"  Filtering articles for interests: {interests}")
         message = self.client.messages.create(
@@ -118,7 +128,7 @@ class FeedSummarizer:
                 }
             ],
         )
-        result = message.content[0].text.strip()
+        result = self.extract_text(message)
         if result == "NO_MATCHES":
             return None
         return result
